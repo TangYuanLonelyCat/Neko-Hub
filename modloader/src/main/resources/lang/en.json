@@ -1,0 +1,23 @@
+{
+  "modloader.version": "Neko-Hub v.%s %s",
+  "modloader.min_api": "Neko-API MinVersion v.%s",
+  "modloader.loading": "Detecting and loading mods...",
+  "modloader.loaded": "A total of %d mods registered, took %s seconds.",
+  "modloader.error.api_version": "The API used by the %s mod is lower than the minimum API version supported by the current Neko-Hub version, so this mod cannot be loaded.",
+  "modloader.success.loaded": "Java mod loaded: %s v%s",
+  "modloader.success.unloaded": "All mods unloaded",
+  "command.help.description": "Show available commands",
+  "command.help.usage": "/help",
+  "command.clear.description": "Clear the console",
+  "command.clear.usage": "/clear",
+  "command.load.description": "Load a module",
+  "command.load.usage": "/load [module package name]",
+  "command.unload.description": "Unload a module",
+  "command.unload.usage": "/unload [module package name]",
+  "command.error.unknown": "Unknown command: %s",
+  "command.error.usage": "Type /help for available commands",
+  "command.error.args": "Usage: %s",
+  "broadcast.confirm.system": "Are you sure you want to allow the mod \"%s\" to listen to Hub.System content? This is usually an unreasonable action and may lead to unexpected consequences [Y/N]",
+  "console.confirm.prompt": "[Y/N]: ",
+  "console.confirm.invalid": "Please enter Y or N"
+}

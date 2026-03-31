@@ -1,0 +1,23 @@
+{
+  "modloader.version": "Neko-Hub v.%s %s",
+  "modloader.min_api": "Neko-API 最低版本 v.%s",
+  "modloader.loading": "正在检测和加载模组...",
+  "modloader.loaded": "共注册 %d 个模组，耗时 %s 秒。",
+  "modloader.error.api_version": "%s 模组使用的 API 版本低于当前 Neko-Hub 版本支持的最低 API 版本，因此无法加载此模组。",
+  "modloader.success.loaded": "Java 模组已加载: %s v%s",
+  "modloader.success.unloaded": "所有模组已卸载",
+  "command.help.description": "显示可用命令",
+  "command.help.usage": "/help",
+  "command.clear.description": "清空控制台",
+  "command.clear.usage": "/clear",
+  "command.load.description": "加载模组",
+  "command.load.usage": "/load [模组包名]",
+  "command.unload.description": "卸载模组",
+  "command.unload.usage": "/unload [模组包名]",
+  "command.error.unknown": "未知命令: %s",
+  "command.error.usage": "输入 /help 查看可用命令",
+  "command.error.args": "用法: %s",
+  "broadcast.confirm.system": "确定要允许模组 \"%s\" 监听 Hub.System 内容吗？这通常是不合理的操作，可能会导致意外后果 [Y/N]",
+  "console.confirm.prompt": "[Y/N]: ",
+  "console.confirm.invalid": "请输入 Y 或 N"
+}
