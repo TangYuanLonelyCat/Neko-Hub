@@ -17,7 +17,6 @@ plugins {
 }
 
 // Include subprojects in the build.
-include(":app")
 include(":utils")
 
 // Modloader module (包含 lib, api, core 包)
