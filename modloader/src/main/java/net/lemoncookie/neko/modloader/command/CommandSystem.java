@@ -33,6 +33,8 @@ public class CommandSystem {
         registerCommand("clear", new ClearCommand());
         registerCommand("load", new LoadCommand());
         registerCommand("unload", new UnloadCommand());
+        registerCommand("set", new SetCommand());
+        registerCommand("autoboot", new AutobootCommand());
     }
 
     /**

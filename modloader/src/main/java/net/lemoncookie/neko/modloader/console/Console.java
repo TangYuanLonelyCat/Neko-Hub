@@ -1,6 +1,7 @@
 package net.lemoncookie.neko.modloader.console;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,6 +24,9 @@ public class Console {
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_BLUE = "\u001B[34m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_MAGENTA = "\u001B[35m";
+    private static final String ANSI_WHITE = "\u001B[37m";
 
     /**
      * 构造函数
@@ -67,6 +71,8 @@ public class Console {
      */
     public void printError(String text) {
         out.println(ANSI_RED + text + ANSI_RESET);
+        // 同时通过广播域发送消息
+        sendToConsole("error", text);
     }
 
     /**
@@ -74,6 +80,8 @@ public class Console {
      */
     public void printWarning(String text) {
         out.println(ANSI_YELLOW + text + ANSI_RESET);
+        // 同时通过广播域发送消息
+        sendToConsole("warning", text);
     }
 
     /**
@@ -81,6 +89,8 @@ public class Console {
      */
     public void printSuccess(String text) {
         out.println(ANSI_GREEN + text + ANSI_RESET);
+        // 同时通过广播域发送消息
+        sendToConsole("success", text);
     }
 
     /**
@@ -88,6 +98,42 @@ public class Console {
      */
     public void printInfo(String text) {
         out.println(ANSI_BLUE + text + ANSI_RESET);
+        // 同时通过广播域发送消息
+        sendToConsole("info", text);
+    }
+
+    /**
+     * 打印信息（青色）
+     */
+    public void printCyan(String text) {
+        out.println(ANSI_CYAN + text + ANSI_RESET);
+        sendToConsole("cyan", text);
+    }
+
+    /**
+     * 打印信息（紫色）
+     */
+    public void printMagenta(String text) {
+        out.println(ANSI_MAGENTA + text + ANSI_RESET);
+        sendToConsole("magenta", text);
+    }
+
+    /**
+     * 打印信息（白色）
+     */
+    public void printWhite(String text) {
+        out.println(ANSI_WHITE + text + ANSI_RESET);
+        sendToConsole("white", text);
+    }
+
+    /**
+     * 通过广播域发送消息到控制台
+     */
+    private void sendToConsole(String type, String message) {
+        // 只有在广播域管理器初始化后才发送
+        if (modLoader.getBroadcastManager() != null) {
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_CONSOLE, message, "system");
+        }
     }
 
     /**

@@ -17,7 +17,10 @@
   "command.error.unknown": "未知命令: %s",
   "command.error.usage": "输入 /help 查看可用命令",
   "command.error.args": "用法: %s",
-  "broadcast.confirm.system": "确定要允许模组 \"%s\" 监听 Hub.System 内容吗？这通常是不合理的操作，可能会导致意外后果 [Y/N]",
+  "broadcast.confirm.system": "确定要允许模组 %s 监听并发送 Hub.System 内容吗？这通常是不合理的操作，可能会导致意外后果 [Y/N]",
+  "broadcast.confirm.private": "要允许模组 %s 监听并发送 %s 内容吗？ [Y/N]",
+  "broadcast.confirm.upgrade": "确定要将模组 %s 提权至 %s 吗？请仔细确认，不当的提权可能会导致意外后果 [Y/N]",
+  "boot.error.not_found": "Boot 文件可能不存在或已损坏，Neko-Hub 无法读取，您可以通过手动加载模组或通过/autoboot 重新生成 boot 文件。",
   "console.confirm.prompt": "[Y/N]: ",
   "console.confirm.invalid": "请输入 Y 或 N"
 }

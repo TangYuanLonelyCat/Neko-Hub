@@ -12,10 +12,19 @@ public class BroadcastManager {
 
     private final ModLoader modLoader;
     private final Map<String, BroadcastDomain> domains;
+    private final PermissionManager permissionManager;
+    private final Map<String, Map<String, Boolean>> domainPermissions; // 存储模组对特定域的权限
 
     // 系统广播域
     public static final String HUB_ALL = "Hub.ALL";
     public static final String HUB_SYSTEM = "Hub.System";
+    public static final String HUB_CONSOLE = "Hub.Console";
+
+    // 错误码
+    public static final int ERROR_SUCCESS = 0;
+    public static final int ERROR_PERMISSION_DENIED = 502;
+    public static final int ERROR_DOMAIN_NOT_FOUND = 404;
+    public static final int ERROR_DOMAIN_EXISTS = 402;
 
     /**
      * 构造函数
@@ -23,6 +32,8 @@ public class BroadcastManager {
     public BroadcastManager(ModLoader modLoader) {
         this.modLoader = modLoader;
         this.domains = new HashMap<>();
+        this.permissionManager = new PermissionManager();
+        this.domainPermissions = new HashMap<>();
         
         // 初始化系统广播域
         initializeSystemDomains();
@@ -32,23 +43,34 @@ public class BroadcastManager {
      * 初始化系统广播域
      */
     private void initializeSystemDomains() {
-        // 公共域
-        addDomain(HUB_ALL, false, "system");
-        // 系统域
-        addDomain(HUB_SYSTEM, false, "system");
+        // 公开公共域
+        addDomain(HUB_ALL, false, true, "system");
+        // Hub.System 不再由广播系统自动创建，由控制台模组创建（视为公开私有域）
     }
 
     /**
      * 添加广播域
      */
-    public boolean addDomain(String name, boolean isPrivate, String ownerModId) {
+    public int addDomain(String name, boolean isPrivate, boolean isPublic, String ownerModId) {
         if (domains.containsKey(name)) {
-            return false; // 广播域已存在
+            return ERROR_DOMAIN_EXISTS; // 广播域已存在
         }
         
-        BroadcastDomain domain = new BroadcastDomain(name, isPrivate, ownerModId);
+        // 检查权限
+        ModPermission modPermission = permissionManager.getModPermission(ownerModId);
+        if (modPermission.getLevel() >= 3) {
+            return ERROR_PERMISSION_DENIED; // 权限不足
+        }
+        
+        BroadcastDomain domain = new BroadcastDomain(name, isPrivate, isPublic, ownerModId);
         domains.put(name, domain);
-        return true;
+        
+        // 初始化域权限
+        domainPermissions.put(name, new HashMap<>());
+        // 所有者默认拥有权限
+        domainPermissions.get(name).put(ownerModId, true);
+        
+        return ERROR_SUCCESS;
     }
 
     /**
@@ -61,74 +83,197 @@ public class BroadcastManager {
     /**
      * 移除广播域
      */
-    public boolean removeDomain(String name, String modId) {
+    public int removeDomain(String name, String modId) {
         BroadcastDomain domain = domains.get(name);
         if (domain == null) {
-            return false;
+            return ERROR_DOMAIN_NOT_FOUND;
         }
         
         // 只有所有者可以删除广播域
         if (!domain.getOwnerModId().equals(modId)) {
-            return false;
+            return ERROR_PERMISSION_DENIED;
         }
         
         domains.remove(name);
-        return true;
+        domainPermissions.remove(name);
+        return ERROR_SUCCESS;
     }
 
     /**
      * 向广播域发送消息
      */
-    public void broadcast(String domainName, String message, String senderModId) {
+    public int broadcast(String domainName, String message, String senderModId) {
         BroadcastDomain domain = domains.get(domainName);
-        if (domain != null) {
-            domain.broadcast(message, senderModId);
+        if (domain == null) {
+            return ERROR_DOMAIN_NOT_FOUND;
         }
+        
+        // 检查权限
+        if (!hasPermissionToAccessDomain(domainName, senderModId)) {
+            return ERROR_PERMISSION_DENIED;
+        }
+        
+        domain.broadcast(message, senderModId);
+        return ERROR_SUCCESS;
     }
 
     /**
      * 监听广播域
      */
-    public boolean listen(String domainName, MessageListener listener, String modId, String modName) {
+    public int listen(String domainName, MessageListener listener, String modId, String modName) {
         BroadcastDomain domain = domains.get(domainName);
         if (domain == null) {
-            return false;
+            return ERROR_DOMAIN_NOT_FOUND;
         }
         
-        // 监听 Hub.System 需要用户确认
-        if (HUB_SYSTEM.equals(domainName) && !"system".equals(modId)) {
-            try {
-                modLoader.getConsole().printWarning(
-                    modLoader.getLanguageManager().getMessage("broadcast.confirm.system", modName)
-                );
-                boolean confirmed = modLoader.getConsole().readConfirmation();
-                if (!confirmed) {
-                    return false;
-                }
-            } catch (Exception e) {
-                return false;
-            }
+        // 检查权限
+        if (!hasPermissionToAccessDomain(domainName, modId)) {
+            return ERROR_PERMISSION_DENIED;
         }
         
-        return domain.addListener(listener, modId);
+        domain.addListener(listener, modId);
+        return ERROR_SUCCESS;
     }
 
     /**
      * 监听私有广播域
      */
-    public boolean listenPrivate(String modId, MessageListener listener) {
+    public int listenPrivate(String modId, MessageListener listener) {
         // 私有域格式：Hub.[modId]
         String domainName = "Hub." + modId;
         BroadcastDomain domain = domains.get(domainName);
         if (domain == null) {
             // 创建私有域
-            if (!addDomain(domainName, true, modId)) {
-                return false;
+            int result = addDomain(domainName, true, false, modId);
+            if (result != ERROR_SUCCESS) {
+                return result;
             }
             domain = domains.get(domainName);
         }
         
-        return domain.addListener(listener, modId);
+        domain.addListener(listener, modId);
+        return ERROR_SUCCESS;
+    }
+
+    /**
+     * 尝试获取域权限
+     */
+    public int requestDomainPermission(String domainName, String modId, String modName) {
+        BroadcastDomain domain = domains.get(domainName);
+        if (domain == null) {
+            return ERROR_DOMAIN_NOT_FOUND;
+        }
+        
+        // Hub.System 和公开私有域都需要用户确认
+        if (HUB_SYSTEM.equals(domainName) || (domain.isPrivate() && domain.isPublic())) {
+            try {
+                if (HUB_SYSTEM.equals(domainName)) {
+                    modLoader.getConsole().printWarning(
+                        modLoader.getLanguageManager().getMessage("broadcast.confirm.system", modName)
+                    );
+                } else {
+                    modLoader.getConsole().printWarning(
+                        modLoader.getLanguageManager().getMessage("broadcast.confirm.private", modName, domainName)
+                    );
+                }
+                boolean confirmed = modLoader.getConsole().readConfirmation();
+                if (!confirmed) {
+                    return ERROR_PERMISSION_DENIED;
+                }
+            } catch (Exception e) {
+                return ERROR_PERMISSION_DENIED;
+            }
+        }
+        
+        // 授予权限
+        domainPermissions.computeIfAbsent(domainName, k -> new HashMap<>()).put(modId, true);
+        return ERROR_SUCCESS;
+    }
+
+    /**
+     * 尝试提权
+     */
+    public int requestPermissionUpgrade(String modId, String modName, int targetLevel) {
+        // 向下提权不需要确认
+        ModPermission currentPermission = permissionManager.getModPermission(modId);
+        if (targetLevel >= currentPermission.getLevel()) {
+            permissionManager.setModPermission(modId, ModPermission.fromLevel(targetLevel));
+            return ERROR_SUCCESS;
+        }
+        
+        // 向上提权需要用户确认
+        try {
+            modLoader.getConsole().printWarning(
+                modLoader.getLanguageManager().getMessage("broadcast.confirm.upgrade", modName, 
+                    ModPermission.fromLevel(targetLevel).getDisplayName())
+            );
+            boolean confirmed = modLoader.getConsole().readConfirmation();
+            if (!confirmed) {
+                return ERROR_PERMISSION_DENIED;
+            }
+        } catch (Exception e) {
+            return ERROR_PERMISSION_DENIED;
+        }
+        
+        permissionManager.setModPermission(modId, ModPermission.fromLevel(targetLevel));
+        return ERROR_SUCCESS;
+    }
+
+    /**
+     * 检查模组是否有权限访问域
+     */
+    private boolean hasPermissionToAccessDomain(String domainName, String modId) {
+        BroadcastDomain domain = domains.get(domainName);
+        if (domain == null) {
+            return false;
+        }
+        
+        ModPermission modPermission = permissionManager.getModPermission(modId);
+        
+        // 超级管理员拥有所有权限
+        if (modPermission == ModPermission.SUPER_ADMIN) {
+            return true;
+        }
+        
+        // 检查是否是域所有者
+        if (domain.getOwnerModId().equals(modId)) {
+            return true;
+        }
+        
+        // Hub.System 视为公开私有域处理
+        if (HUB_SYSTEM.equals(domainName)) {
+            // 需要权限等级 1 或更低，并且需要获取权限
+            if (modPermission.getLevel() <= 1) {
+                Map<String, Boolean> permissions = domainPermissions.get(domainName);
+                return permissions != null && permissions.getOrDefault(modId, false);
+            }
+            return false;
+        }
+        
+        // 公开公共域（Hub.ALL）
+        if (!domain.isPrivate() && domain.isPublic()) {
+            // 所有模组（除 level=3 外）都有权限
+            return modPermission.getLevel() <= 2;
+        }
+        
+        // 公共域（非私有，非公开）
+        if (!domain.isPrivate() && !domain.isPublic()) {
+            // 需要权限等级 2 或更低
+            return modPermission.getLevel() <= 2;
+        }
+        
+        // 私有域
+        if (domain.isPrivate()) {
+            // 公开私有域需要检查权限
+            if (domain.isPublic()) {
+                Map<String, Boolean> permissions = domainPermissions.get(domainName);
+                return permissions != null && permissions.getOrDefault(modId, false);
+            }
+            // 非公开私有域只能由所有者访问
+            return false;
+        }
+        
+        return false;
     }
 
     /**
@@ -150,5 +295,27 @@ public class BroadcastManager {
      */
     public boolean hasDomain(String name) {
         return domains.containsKey(name);
+    }
+
+    /**
+     * 获取权限管理器
+     */
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+
+    /**
+     * 创建系统域（由控制台模组调用）
+     */
+    public int createSystemDomain(String ownerModId) {
+        // Hub.System 作为公开私有域创建
+        return addDomain(HUB_SYSTEM, true, true, ownerModId);
+    }
+
+    /**
+     * 创建控制台域（公开公共域）
+     */
+    public int createConsoleDomain(String ownerModId) {
+        return addDomain("Hub.Console", false, true, ownerModId);
     }
 }

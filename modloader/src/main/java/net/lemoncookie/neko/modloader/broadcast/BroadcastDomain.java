@@ -11,15 +11,17 @@ public class BroadcastDomain {
     private final String name;
     private final Set<MessageListener> listeners;
     private final boolean isPrivate;
+    private final boolean isPublic;
     private final String ownerModId;
 
     /**
      * 构造函数
      */
-    public BroadcastDomain(String name, boolean isPrivate, String ownerModId) {
+    public BroadcastDomain(String name, boolean isPrivate, boolean isPublic, String ownerModId) {
         this.name = name;
         this.listeners = new HashSet<>();
         this.isPrivate = isPrivate;
+        this.isPublic = isPublic;
         this.ownerModId = ownerModId;
     }
 
@@ -38,6 +40,13 @@ public class BroadcastDomain {
     }
 
     /**
+     * 检查是否是公开域
+     */
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    /**
      * 获取所有者模组ID
      */
     public String getOwnerModId() {
@@ -48,7 +57,7 @@ public class BroadcastDomain {
      * 添加监听器
      */
     public boolean addListener(MessageListener listener, String modId) {
-        // 私有域只能由所有者监听
+        // 私有域只能由所有者监听，除非是公开私有域且有权限
         if (isPrivate && !modId.equals(ownerModId)) {
             return false;
         }
