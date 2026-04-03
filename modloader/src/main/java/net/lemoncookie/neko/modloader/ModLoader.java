@@ -2,6 +2,7 @@ package net.lemoncookie.neko.modloader;
 
 import net.lemoncookie.neko.modloader.core.ModCore;
 import net.lemoncookie.neko.modloader.api.IModAPI;
+import net.lemoncookie.neko.modloader.api.ModDependency;
 import net.lemoncookie.neko.modloader.lib.ModLibrary;
 import net.lemoncookie.neko.modloader.command.CommandSystem;
 import net.lemoncookie.neko.modloader.console.Console;
