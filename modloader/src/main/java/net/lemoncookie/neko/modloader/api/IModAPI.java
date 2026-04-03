@@ -3,14 +3,17 @@ package net.lemoncookie.neko.modloader.api;
 import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.broadcast.MessageListener;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
- * Java版模组API接口
- * 用于Java模组开发
+ * Java 版模组 API 接口
+ * 用于 Java 模组开发
  */
 public interface IModAPI {
 
     /**
-     * 获取模组ID
+     * 获取模组 ID
      */
     String getModId();
 
@@ -30,6 +33,15 @@ public interface IModAPI {
      * 获取模组包名
      */
     String getPackageName();
+
+    /**
+     * 获取模组依赖列表
+     * 
+     * @return 依赖列表，无依赖时返回空列表
+     */
+    default List<ModDependency> getDependencies() {
+        return Collections.emptyList();
+    }
 
     /**
      * 模组加载时调用

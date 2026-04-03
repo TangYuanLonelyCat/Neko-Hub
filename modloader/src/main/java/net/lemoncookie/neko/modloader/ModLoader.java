@@ -181,6 +181,11 @@ public class ModLoader {
             return;
         }
 
+        // 检查依赖
+        if (!checkDependencies(mod)) {
+            return; // 依赖不满足，拒绝加载
+        }
+
         javaMods.add(mod);
         
         // 调用模组加载方法，捕获异常确保框架稳定
@@ -211,6 +216,72 @@ public class ModLoader {
         }
         
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getVersion()));
+    }
+
+    /**
+     * 检查模组依赖
+     * 
+     * @param mod 要检查的模组
+     * @return 依赖是否满足
+     */
+    private boolean checkDependencies(IModAPI mod) {
+        List<ModDependency> dependencies = mod.getDependencies();
+        
+        if (dependencies.isEmpty()) {
+            return true; // 无依赖，直接通过
+        }
+        
+        for (ModDependency dependency : dependencies) {
+            String requiredModId = dependency.getModId();
+            String requiredVersion = dependency.getMinVersion();
+            
+            // 检查依赖模组是否已加载
+            IModAPI loadedMod = getLoadedMod(requiredModId);
+            
+            if (loadedMod == null) {
+                // 依赖模组未加载
+                String errorMsg = String.format(
+                    "模组 [%s] 所需的依赖 [%s-%s] 不存在或未加载",
+                    mod.getModId(),
+                    requiredModId,
+                    requiredVersion
+                );
+                console.printError(errorMsg);
+                broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                return false;
+            }
+            
+            // 检查依赖模组版本
+            if (VersionComparator.compare(loadedMod.getVersion(), requiredVersion) < 0) {
+                String errorMsg = String.format(
+                    "模组 [%s] 所需的依赖 [%s-%s] 版本过低（当前版本：%s）",
+                    mod.getModId(),
+                    requiredModId,
+                    requiredVersion,
+                    loadedMod.getVersion()
+                );
+                console.printError(errorMsg);
+                broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                return false;
+            }
+        }
+        
+        return true; // 所有依赖都满足
+    }
+
+    /**
+     * 根据模组 ID 获取已加载的模组
+     * 
+     * @param modId 模组 ID
+     * @return 模组实例，未找到返回 null
+     */
+    private IModAPI getLoadedMod(String modId) {
+        for (IModAPI loadedMod : javaMods) {
+            if (loadedMod.getModId().equals(modId)) {
+                return loadedMod;
+            }
+        }
+        return null;
     }
 
     /**

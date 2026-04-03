@@ -1,15 +1,27 @@
 package net.lemoncookie.neko.modloader.boot;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.api.IModAPI;
+import net.lemoncookie.neko.modloader.api.ModDependency;
+import net.lemoncookie.neko.modloader.util.VersionComparator;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * Boot 文件管理器
@@ -97,22 +109,185 @@ public class BootFileManager {
             return;
         }
         
+        // 扫描 mods 文件夹下的所有 jar 文件
+        File[] modFiles = modsDir.listFiles((dir, name) -> name.endsWith(".jar"));
+        if (modFiles == null || modFiles.length == 0) {
+            modLoader.getConsole().printWarning("No mod files found in mods folder");
+            return;
+        }
+        
+        // 解析每个模组的依赖信息
+        Map<String, ModInfo> modInfoMap = new HashMap<>();
+        for (File modFile : modFiles) {
+            ModInfo modInfo = extractModInfo(modFile);
+            if (modInfo != null) {
+                modInfoMap.put(modInfo.modId, modInfo);
+            }
+        }
+        
+        // 拓扑排序
+        List<String> sortedMods;
+        try {
+            sortedMods = topologicalSort(modInfoMap);
+        } catch (CircularDependencyException e) {
+            modLoader.getConsole().printError("Circular dependency detected: " + e.getMessage());
+            return;
+        }
+        
+        // 写入 auto.boot 文件
         File bootFile = new File("auto.boot");
         try (PrintWriter writer = new PrintWriter(
                 new OutputStreamWriter(new FileOutputStream(bootFile), StandardCharsets.UTF_8))) {
             
-            // 扫描 mods 文件夹下的所有 jar 文件
-            File[] modFiles = modsDir.listFiles((dir, name) -> name.endsWith(".jar"));
-            if (modFiles != null) {
-                for (File modFile : modFiles) {
-                    // 使用文件名（不含路径）
-                    writer.println("/load " + modFile.getName());
+            for (String modId : sortedMods) {
+                ModInfo modInfo = modInfoMap.get(modId);
+                if (modInfo != null) {
+                    writer.println("/load " + modInfo.fileName);
                 }
             }
             
-            modLoader.getConsole().printSuccess("Generated auto.boot file");
+            modLoader.getConsole().printSuccess("Generated auto.boot file with dependency order");
         } catch (IOException e) {
             modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 从 JAR 文件中提取模组信息
+     * 
+     * 通过读取 JAR 文件的 MANIFEST.MF 来获取模组信息
+     * 期望的 manifest 属性：
+     * - Mod-Id: 模组 ID
+     * - Mod-Version: 模组版本
+     * - Mod-Dependencies: 依赖列表（格式：mod1:1.0.0,mod2:2.0.0）
+     */
+    private ModInfo extractModInfo(File modFile) {
+        try (JarFile jarFile = new JarFile(modFile)) {
+            String fileName = modFile.getName();
+            
+            // 从 manifest 读取模组信息
+            var manifest = jarFile.getManifest();
+            if (manifest == null) {
+                // 没有 manifest，使用文件名作为模组 ID
+                String modId = fileName.substring(0, fileName.lastIndexOf(".jar"));
+                return new ModInfo(modId, fileName, new ArrayList<>());
+            }
+            
+            String modId = manifest.getMainAttributes().getValue("Mod-Id");
+            String modVersion = manifest.getMainAttributes().getValue("Mod-Version");
+            String dependenciesStr = manifest.getMainAttributes().getValue("Mod-Dependencies");
+            
+            // 如果没有指定 Mod-Id，使用文件名
+            if (modId == null || modId.trim().isEmpty()) {
+                modId = fileName.substring(0, fileName.lastIndexOf(".jar"));
+            }
+            
+            // 解析依赖
+            List<ModDependency> dependencies = new ArrayList<>();
+            if (dependenciesStr != null && !dependenciesStr.trim().isEmpty()) {
+                // 依赖格式：mod1:1.0.0,mod2:2.0.0
+                String[] depPairs = dependenciesStr.split(",");
+                for (String depPair : depPairs) {
+                    depPair = depPair.trim();
+                    if (!depPair.isEmpty()) {
+                        String[] parts = depPair.split(":");
+                        if (parts.length == 2) {
+                            String depModId = parts[0].trim();
+                            String depMinVersion = parts[1].trim();
+                            if (!depModId.isEmpty() && !depMinVersion.isEmpty()) {
+                                dependencies.add(new ModDependency(depModId, depMinVersion));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return new ModInfo(modId, fileName, dependencies);
+        } catch (IOException e) {
+            modLoader.getConsole().printWarning("Failed to read mod info from " + modFile.getName() + ": " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 拓扑排序
+     * 
+     * @param modInfoMap 模组信息映射表
+     * @return 排序后的模组 ID 列表
+     * @throws CircularDependencyException 如果存在循环依赖
+     */
+    private List<String> topologicalSort(Map<String, ModInfo> modInfoMap) throws CircularDependencyException {
+        List<String> result = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+        Set<String> visiting = new HashSet<>(); // 正在访问的节点（用于检测循环依赖）
+        
+        for (String modId : modInfoMap.keySet()) {
+            if (!visited.contains(modId)) {
+                visit(modId, modInfoMap, visited, visiting, result);
+            }
+        }
+        
+        // 反转结果（拓扑排序的结果是逆序的）
+        java.util.Collections.reverse(result);
+        return result;
+    }
+    
+    /**
+     * 访问单个节点（深度优先搜索）
+     */
+    private void visit(String modId, Map<String, ModInfo> modInfoMap, 
+                       Set<String> visited, Set<String> visiting, List<String> result) 
+            throws CircularDependencyException {
+        
+        if (visited.contains(modId)) {
+            return; // 已访问过
+        }
+        
+        if (visiting.contains(modId)) {
+            // 检测到循环依赖
+            throw new CircularDependencyException("Circular dependency detected involving mod: " + modId);
+        }
+        
+        visiting.add(modId); // 标记为正在访问
+        
+        // 访问依赖的模组
+        ModInfo modInfo = modInfoMap.get(modId);
+        if (modInfo != null) {
+            for (ModDependency dependency : modInfo.dependencies) {
+                String depModId = dependency.getModId();
+                if (modInfoMap.containsKey(depModId)) {
+                    visit(depModId, modInfoMap, visited, visiting, result);
+                }
+                // 如果依赖的模组不在当前扫描的模组列表中，忽略（可能是外部依赖或已加载的系统模组）
+            }
+        }
+        
+        visiting.remove(modId); // 标记为访问完成
+        visited.add(modId);
+        result.add(modId); // 添加到结果列表
+    }
+    
+    /**
+     * 模组信息内部类
+     */
+    private static class ModInfo {
+        String modId;
+        String fileName;
+        List<ModDependency> dependencies;
+        
+        ModInfo(String modId, String fileName, List<ModDependency> dependencies) {
+            this.modId = modId;
+            this.fileName = fileName;
+            this.dependencies = dependencies;
+        }
+    }
+    
+    /**
+     * 循环依赖异常
+     */
+    private static class CircularDependencyException extends Exception {
+        CircularDependencyException(String message) {
+            super(message);
         }
     }
     

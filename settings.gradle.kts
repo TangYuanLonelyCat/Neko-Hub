@@ -29,4 +29,8 @@ include(":filelabel")
 include(":calendar")
 include(":todolist")
 
+// Test modules
+include(":testmod-a")
+include(":testmod-b")
+
 rootProject.name = "Neko-Hub"
