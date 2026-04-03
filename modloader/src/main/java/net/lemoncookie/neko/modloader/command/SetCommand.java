@@ -12,7 +12,7 @@ public class SetCommand implements Command {
     public void execute(ModLoader modLoader, String args) {
         if (args.isEmpty()) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
             );
             return;
         }
@@ -21,13 +21,13 @@ public class SetCommand implements Command {
         String[] parts = args.split("\\s+", 3);
         if (parts.length < 2) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
             );
             return;
         }
 
         String subCommand = parts[0].toLowerCase();
-
+        
         switch (subCommand) {
             case "modpermission":
                 setModPermission(modLoader, parts);
@@ -48,15 +48,15 @@ public class SetCommand implements Command {
     private void setModPermission(ModLoader modLoader, String[] parts) {
         if (parts.length < 3) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/set modPermission [模组名] [level 值]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set modPermission [模组名] [level 值]")
             );
             return;
         }
 
         String modName = parts[1];
         // 移除可能的引号
-        if ((modName.startsWith("\"") && modName.endsWith("\"")) ||
-                (modName.startsWith("'") && modName.endsWith("'"))) {
+        if ((modName.startsWith("\"") && modName.endsWith("\"")) || 
+            (modName.startsWith("'") && modName.endsWith("'"))) {
             modName = modName.substring(1, modName.length() - 1);
         }
 
@@ -84,15 +84,15 @@ public class SetCommand implements Command {
     private void setBootFile(ModLoader modLoader, String[] parts) {
         if (parts.length < 2) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/set bootfile [文件名]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set bootfile [文件名]")
             );
             return;
         }
 
         String fileName = parts[1];
         // 移除可能的引号
-        if ((fileName.startsWith("\"") && fileName.endsWith("\"")) ||
-                (fileName.startsWith("'") && fileName.endsWith("'"))) {
+        if ((fileName.startsWith("\"") && fileName.endsWith("\"")) || 
+            (fileName.startsWith("'") && fileName.endsWith("'"))) {
             fileName = fileName.substring(1, fileName.length() - 1);
         }
 

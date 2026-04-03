@@ -10,6 +10,8 @@ import net.lemoncookie.neko.modloader.lang.LanguageManager;
 import net.lemoncookie.neko.modloader.boot.BootFileManager;
 import net.lemoncookie.neko.modloader.config.ConfigManager;
 import net.lemoncookie.neko.modloader.consolemod.ConsoleMod;
+import net.lemoncookie.neko.modloader.util.VersionComparator;
+import net.lemoncookie.neko.modloader.logging.SimpleLogger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -24,7 +26,7 @@ import net.lemoncookie.neko.modloader.api.ModAPI;
  */
 public class ModLoader {
 
-    private static final String VERSION = "1.0.0";
+    private static final String VERSION = "2.0.0";
     private static final String MIN_API_VERSION = "1.0.0";
     private static final String GITHUB_VERSION = "v1.0.0";
 
@@ -38,6 +40,7 @@ public class ModLoader {
     private final LanguageManager languageManager;
     private final BootFileManager bootFileManager;
     private final ConfigManager configManager;
+    private final SimpleLogger simpleLogger;
 
     private boolean initialized = false;
 
@@ -50,14 +53,17 @@ public class ModLoader {
         this.javaMods = new ArrayList<>();
         this.kotlinMods = new ArrayList<>();
         this.languageManager = new LanguageManager();
+        this.broadcastManager = new BroadcastManager(this);
         this.console = new Console(this);
         this.commandSystem = new CommandSystem(this);
-        this.broadcastManager = new BroadcastManager(this);
         this.bootFileManager = new BootFileManager(this);
         this.configManager = new ConfigManager(this);
-
+        
         // 自动创建 mods 文件夹
         createModsFolder();
+        
+        // 初始化日志系统（在其他组件之后，因为需要 modLoader 引用）
+        this.simpleLogger = new SimpleLogger(this);
     }
 
     /**
@@ -81,6 +87,15 @@ public class ModLoader {
             return;
         }
 
+        // 设置核心组件的 ModLoader 引用
+        core.setModLoader(this);
+        javaLibrary.setModLoader(this);
+
+        // 注册日志监听器（在加载控制台模组之前，确保所有消息都被记录）
+        broadcastManager.listen("Hub.ALL", simpleLogger, "System", "SimpleLogger");
+        broadcastManager.listen("Hub.System", simpleLogger, "System", "SimpleLogger");
+        broadcastManager.listen("Hub.Console", simpleLogger, "System", "SimpleLogger");
+
         console.printLine(languageManager.getMessage("modloader.version", VERSION, GITHUB_VERSION));
         console.printLine(languageManager.getMessage("modloader.min_api", MIN_API_VERSION));
         console.printLine();
@@ -103,6 +118,9 @@ public class ModLoader {
         // 加载 boot 文件
         loadBootFile();
 
+        // 初始化完成提示
+        console.printLine("ModLoader initialization completed. Starting interactive console...");
+
         // 启动控制台交互
         console.startInteractive();
     }
@@ -113,29 +131,29 @@ public class ModLoader {
     private void loadBootFile() {
         String bootFileName = configManager.getBootFile();
         File bootFile = new File(bootFileName);
-
+        
         // 检查是否是默认 boot 文件（auto.boot）
         boolean isDefaultBootFile = "auto.boot".equals(bootFileName);
-
+        
         if (!bootFile.exists() || !bootFile.canRead()) {
             // 如果是默认 boot 文件不存在，自动创建
             if (isDefaultBootFile) {
                 console.printLine("Creating default auto.boot file...");
                 bootFileManager.generateAutoBoot();
-
+                
                 // 重新检查文件是否创建成功
                 if (bootFile.exists() && bootFile.canRead()) {
                     console.printLine("Loading boot file: " + bootFileName);
                     bootFileManager.executeBootFile(bootFileName);
                 } else {
                     console.printError(
-                            languageManager.getMessage("boot.error.not_found")
+                        languageManager.getMessage("boot.error.not_found")
                     );
                 }
             } else {
                 // 用户指定的 boot 文件不存在，只显示错误
                 console.printError(
-                        languageManager.getMessage("boot.error.not_found")
+                    languageManager.getMessage("boot.error.not_found")
                 );
             }
         } else {
@@ -164,7 +182,7 @@ public class ModLoader {
         }
 
         javaMods.add(mod);
-
+        
         // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
@@ -173,7 +191,7 @@ public class ModLoader {
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
         }
-
+        
         // 注册命令
         try {
             mod.registerCommands(this);
@@ -182,7 +200,7 @@ public class ModLoader {
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
         }
-
+        
         // 注册广播域监听器
         try {
             mod.registerBroadcastListeners(this);
@@ -191,7 +209,7 @@ public class ModLoader {
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
         }
-
+        
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getVersion()));
     }
 
@@ -199,9 +217,8 @@ public class ModLoader {
      * 检查 API 版本兼容性
      */
     private boolean isApiVersionCompatible(String modApiVersion) {
-        // 简单的版本比较逻辑
-        // 实际项目中应该使用更复杂的版本比较
-        return modApiVersion.compareTo(MIN_API_VERSION) >= 0;
+        // 使用语义化版本比较
+        return VersionComparator.isCompatible(modApiVersion, MIN_API_VERSION);
     }
 
     /**
@@ -237,7 +254,7 @@ public class ModLoader {
         }
 
         kotlinMods.add(mod);
-
+        
         // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
@@ -246,7 +263,7 @@ public class ModLoader {
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
         }
-
+        
         // 注册命令
         try {
             mod.registerCommands(this);
@@ -255,7 +272,7 @@ public class ModLoader {
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
         }
-
+        
         // 注册广播域监听器
         try {
             mod.registerBroadcastListeners(this);
@@ -264,7 +281,7 @@ public class ModLoader {
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
         }
-
+        
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getInfo().getVersion()));
     }
 
@@ -302,7 +319,7 @@ public class ModLoader {
                     console.printError(errorMsg);
                     broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
                 }
-                javaMods.remove(javaMod);
+                javaMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
                 console.printSuccess("Mod unloaded successfully: " + modName);
                 return true;
             }
@@ -318,7 +335,7 @@ public class ModLoader {
                     console.printError(errorMsg);
                     broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
                 }
-                kotlinMods.remove(kotlinMod);
+                kotlinMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
                 console.printSuccess("Mod unloaded successfully: " + modName);
                 return true;
             }
@@ -406,12 +423,19 @@ public class ModLoader {
     }
 
     /**
+     * 获取简单日志器实例
+     */
+    public SimpleLogger getSimpleLogger() {
+        return simpleLogger;
+    }
+
+    /**
      * 主方法
      */
     public static void main(String[] args) {
         ModLoader loader = new ModLoader();
         loader.initialize();
-
+        
         // 保持主线程运行，等待控制台输入
         try {
             Thread.currentThread().join();

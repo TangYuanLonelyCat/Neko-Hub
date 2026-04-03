@@ -8,6 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 配置管理器
@@ -18,11 +22,15 @@ public class ConfigManager {
     private final ModLoader modLoader;
     private final Properties config;
     private final File configFile;
+    private final ScheduledExecutorService scheduler;
+    private final AtomicBoolean needsSave;
     
     public ConfigManager(ModLoader modLoader) {
         this.modLoader = modLoader;
         this.config = new Properties();
-        this.configFile = new File("neko-hub.config");
+        this.configFile = new File(ConfigKeys.CONFIG_FILE);
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+        this.needsSave = new AtomicBoolean(false);
         
         // 加载配置
         loadConfig();
@@ -62,11 +70,24 @@ public class ConfigManager {
     }
     
     /**
-     * 设置配置项
+     * 设置配置项（延迟保存）
      */
     public void setConfig(String key, String value) {
+        if (value == null || value.trim().isEmpty()) {
+            modLoader.getConsole().printWarning("Invalid config value for key: " + key);
+            return;
+        }
+        
         config.setProperty(key, value);
-        saveConfig();
+        
+        // 延迟保存（5 秒）
+        if (needsSave.compareAndSet(false, true)) {
+            scheduler.schedule(() -> {
+                if (needsSave.compareAndSet(true, false)) {
+                    saveConfig();
+                }
+            }, 5, TimeUnit.SECONDS);
+        }
     }
     
     /**
@@ -87,13 +108,22 @@ public class ConfigManager {
      * 获取模组权限等级
      */
     public ModPermission getModPermission(String modId) {
-        String levelStr = getConfig("modpermission." + modId, null);
+        String levelStr = getConfig(ConfigKeys.MOD_PERMISSION_PREFIX + modId, null);
         if (levelStr != null) {
             try {
                 int level = Integer.parseInt(levelStr);
+                // 验证权限等级范围（0-3）
+                if (level < 0 || level > 3) {
+                    modLoader.getConsole().printWarning(
+                        "Invalid permission level " + level + " for mod " + modId + ", using default (NORMAL_COMPONENT)"
+                    );
+                    return ModPermission.NORMAL_COMPONENT;
+                }
                 return ModPermission.fromLevel(level);
             } catch (NumberFormatException e) {
-                // 忽略格式错误
+                modLoader.getConsole().printWarning(
+                    "Invalid permission level format for mod " + modId + ": " + levelStr
+                );
             }
         }
         return ModPermission.NORMAL_COMPONENT; // 默认返回正常组件

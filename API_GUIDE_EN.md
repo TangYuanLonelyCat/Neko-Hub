@@ -67,31 +67,31 @@ The console system is responsible for displaying information and handling user i
 ```java
 // Console class
 public class Console {
-   // Constructor
-   public Console(ModLoader modLoader)
-
-   // Print methods
-   public void printLine(String text)
-   public void printLine()
-   public void print(String text)
-
-   // Colored output methods
-   public void printError(String text)    // Red
-   public void printWarning(String text)  // Yellow
-   public void printSuccess(String text)  // Green
-   public void printInfo(String text)     // Blue
-   public void printCyan(String text)     // Cyan
-   public void printMagenta(String text)  // Magenta
-   public void printWhite(String text)    // White
-
-   // Interactive console
-   public void startInteractive()
-
-   // Other methods
-   public void clear()
-   public String readLine() throws IOException
-   public boolean readConfirmation() throws IOException
-   public void close()
+    // Constructor
+    public Console(ModLoader modLoader)
+    
+    // Print methods
+    public void printLine(String text)
+    public void printLine()
+    public void print(String text)
+    
+    // Colored output methods
+    public void printError(String text)    // Red
+    public void printWarning(String text)  // Yellow
+    public void printSuccess(String text)  // Green
+    public void printInfo(String text)     // Blue
+    public void printCyan(String text)     // Cyan
+    public void printMagenta(String text)  // Magenta
+    public void printWhite(String text)    // White
+    
+    // Interactive console
+    public void startInteractive()
+    
+    // Other methods
+    public void clear()
+    public String readLine() throws IOException
+    public boolean readConfirmation() throws IOException
+    public void close()
 }
 ```
 
@@ -102,16 +102,16 @@ The boot file system is used to execute command sequences automatically at start
 ```java
 // Boot file manager
 public class BootFileManager {
-   // Constructor
-   public BootFileManager(ModLoader modLoader)
-
-   // Boot file operations
-   public List<String> readBootFile(String fileName)
-   public boolean executeBootFile(String fileName)
-   public void generateAutoBoot()                    // Generate auto.boot
-   public void setCurrentBootFile(String fileName)
-   public String getCurrentBootFile()
-   public boolean executeCurrentBootFile()
+    // Constructor
+    public BootFileManager(ModLoader modLoader)
+    
+    // Boot file operations
+    public List<String> readBootFile(String fileName)
+    public boolean executeBootFile(String fileName)
+    public void generateAutoBoot()                    // Generate auto.boot
+    public void setCurrentBootFile(String fileName)
+    public String getCurrentBootFile()
+    public boolean executeCurrentBootFile()
 }
 ```
 
@@ -136,21 +136,21 @@ The configuration management system is used for persistent storage of configurat
 ```java
 // Configuration manager
 public class ConfigManager {
-   // Constructor
-   public ConfigManager(ModLoader modLoader)
-
-   // Configuration operations
-   public String getConfig(String key, String defaultValue)
-   public void setConfig(String key, String value)
-
-   // Boot file configuration
-   public String getBootFile()
-   public void setBootFile(String fileName)
-
-   // Mod permission configuration
-   public ModPermission getModPermission(String modId)
-   public void setModPermission(String modId, int level)
-   public Map<String, Integer> getAllModPermissions()
+    // Constructor
+    public ConfigManager(ModLoader modLoader)
+    
+    // Configuration operations
+    public String getConfig(String key, String defaultValue)
+    public void setConfig(String key, String value)
+    
+    // Boot file configuration
+    public String getBootFile()
+    public void setBootFile(String fileName)
+    
+    // Mod permission configuration
+    public ModPermission getModPermission(String modId)
+    public void setModPermission(String modId, int level)
+    public Map<String, Integer> getAllModPermissions()
 }
 ```
 
@@ -161,19 +161,19 @@ The console mod is a system mod that loads first, responsible for creating syste
 ```java
 // Console mod
 public class ConsoleMod implements IModAPI {
-   // Mod info
-   public String getModId()         // Returns "console-mod"
-   public String getVersion()       // Returns "1.0.0"
-   public String getPackageName()   // Returns "net.lemoncookie.neko.modloader.consolemod"
-   public String getName()          // Returns "Console Mod"
-
-   // Lifecycle
-   public void onLoad(ModLoader modLoader)    // Create Hub.System and Hub.Console domains
-   public void onUnload()
-
-   // Registration methods
-   public void registerCommands(ModLoader modLoader)
-   public void registerBroadcastListeners(ModLoader modLoader)
+    // Mod info
+    public String getModId()         // Returns "console-mod"
+    public String getVersion()       // Returns "1.0.0"
+    public String getPackageName()   // Returns "net.lemoncookie.neko.modloader.consolemod"
+    public String getName()          // Returns "Console Mod"
+    
+    // Lifecycle
+    public void onLoad(ModLoader modLoader)    // Create Hub.System and Hub.Console domains
+    public void onUnload()
+    
+    // Registration methods
+    public void registerCommands(ModLoader modLoader)
+    public void registerBroadcastListeners(ModLoader modLoader)
 }
 ```
 
@@ -184,20 +184,20 @@ The command system is responsible for parsing and executing commands, supporting
 ```java
 // Command system
 public class CommandSystem {
-   // Constructor
-   public CommandSystem(ModLoader modLoader)
-
-   // Command management
-   public void registerCommand(String name, Command command)
-   public void executeCommand(String input)
-   public Map<String, Command> getCommands()
+    // Constructor
+    public CommandSystem(ModLoader modLoader)
+    
+    // Command management
+    public void registerCommand(String name, Command command)
+    public void executeCommand(String input)
+    public Map<String, Command> getCommands()
 }
 
 // Command interface
 public interface Command {
-   void execute(ModLoader modLoader, String args) throws Exception;
-   String getDescription();
-   String getUsage();
+    void execute(ModLoader modLoader, String args) throws Exception;
+    String getDescription();
+    String getUsage();
 }
 ```
 
@@ -210,6 +210,55 @@ public interface Command {
 - `/set bootfile [filename]` - Set boot file name
 - `/autoboot` - Scan mods folder and generate auto.boot file
 - `/exit` - Gracefully shutdown Neko-Hub
+- `/say [domain] "message"` - Send message to specific broadcast domain
+- `/listen [domain] [start|stop]` - Listen/unlisten to specific broadcast domain
+
+**Non-command Input:**
+- Input without `/` prefix will be sent to `Hub.ALL` broadcast domain
+
+**Mod Custom Commands:**
+
+Mods can register their own commands in the `registerCommands` method:
+
+```java
+// Java mod example
+@Override
+public void registerCommands(ModLoader modLoader) {
+    modLoader.getCommandSystem().registerCommand("mycommand", new Command() {
+        @Override
+        public void execute(ModLoader modLoader, String args) {
+            // Command execution logic
+            modLoader.getConsole().printLine("Hello from my command!");
+        }
+        
+        @Override
+        public String getDescription() {
+            return "My custom command";
+        }
+        
+        @Override
+        public String getUsage() {
+            return "/mycommand";
+        }
+    });
+}
+```
+
+```kotlin
+// Kotlin mod example
+override fun registerCommands(modLoader: ModLoader) {
+    modLoader.commandSystem.registerCommand("mycommand", object : Command {
+        override fun execute(modLoader: ModLoader, args: String) {
+            // Command execution logic
+            modLoader.console.printLine("Hello from my command!")
+        }
+        
+        override fun getDescription() = "My custom command"
+        
+        override fun getUsage() = "/mycommand"
+    })
+}
+```
 
 #### Broadcast Domain System (`net.lemoncookie.neko.modloader.broadcast`)
 
@@ -589,7 +638,7 @@ val lib = kotlinModLibrary {
 
 1. **Java Version**: All modules must use Java 21
 2. **Package Naming**: Follow `net.lemoncookie.neko.{module}` convention
-3. **API Design**:
+3. **API Design**: 
    - Java API uses traditional OOP style
    - Kotlin API uses DSL and functional style
 4. **Core Stability**: Core functionality uses Java 21 implementation

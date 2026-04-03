@@ -1,22 +1,32 @@
 package net.lemoncookie.neko.modloader.core;
 
+import net.lemoncookie.neko.modloader.ModLoader;
+
 /**
- * ModLoader核心实现类 - Java 21实现
+ * ModLoader 核心实现类 - Java 21 实现
  * 提供稳定的模组加载核心功能
  */
 public class ModCore {
 
     private volatile boolean initialized = false;
-    private final String version = "1.0.0";
+    private final String version = "2.0.0";
+    private ModLoader modLoader;
 
     /**
-     * 启动ModCore
+     * 设置 ModLoader 引用（用于日志输出）
+     */
+    public void setModLoader(ModLoader modLoader) {
+        this.modLoader = modLoader;
+    }
+
+    /**
+     * 启动 ModCore
      */
     public void start() {
         if (!initialized) {
             initialize();
         }
-        System.out.println("[ModCore] Started successfully on Java " + System.getProperty("java.version"));
+        logMessage("[ModCore] Started successfully on Java " + System.getProperty("java.version"));
     }
 
     /**
@@ -24,7 +34,7 @@ public class ModCore {
      */
     private synchronized void initialize() {
         if (!initialized) {
-            System.out.println("[ModCore] Initializing version " + version);
+            logMessage("[ModCore] Initializing version " + version);
             initialized = true;
         }
     }
@@ -41,5 +51,16 @@ public class ModCore {
      */
     public boolean isInitialized() {
         return initialized;
+    }
+
+    /**
+     * 输出日志消息
+     */
+    private void logMessage(String message) {
+        if (modLoader != null) {
+            modLoader.getBroadcastManager().broadcast("Hub.Console", message, "ModCore");
+        } else {
+            System.out.println(message);
+        }
     }
 }

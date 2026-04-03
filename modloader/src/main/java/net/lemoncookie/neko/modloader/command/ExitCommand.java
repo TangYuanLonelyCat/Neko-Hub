@@ -11,16 +11,16 @@ public class ExitCommand implements Command {
     @Override
     public void execute(ModLoader modLoader, String args) {
         modLoader.getConsole().printInfo("Shutting down Neko-Hub...");
-
+        
         // 通过广播域发送退出消息
         modLoader.getBroadcastManager().broadcast("Hub.Console", "[SYSTEM] Neko-Hub is shutting down...", "ExitCommand");
-
+        
         // 卸载所有模组
         modLoader.unloadAll();
-
+        
         // 关闭控制台
         modLoader.getConsole().close();
-
+        
         // 退出程序
         System.exit(0);
     }

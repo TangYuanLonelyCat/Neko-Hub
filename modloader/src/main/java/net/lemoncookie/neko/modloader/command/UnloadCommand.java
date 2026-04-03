@@ -12,15 +12,15 @@ public class UnloadCommand implements Command {
     public void execute(ModLoader modLoader, String args) {
         if (args.isEmpty()) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/unload [模组名称]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/unload [模组名称]")
             );
             return;
         }
 
         // 移除可能的引号
         args = args.trim();
-        if ((args.startsWith("\"") && args.endsWith("\"")) ||
-                (args.startsWith("'") && args.endsWith("'"))) {
+        if ((args.startsWith("\"") && args.endsWith("\"")) || 
+            (args.startsWith("'") && args.endsWith("'"))) {
             args = args.substring(1, args.length() - 1);
         }
 

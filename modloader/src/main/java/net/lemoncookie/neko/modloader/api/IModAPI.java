@@ -46,6 +46,7 @@ public interface IModAPI {
      */
     default void registerCommands(ModLoader modLoader) {
         // 子类可以覆盖此方法注册命令
+        // 使用 modLoader.getCommandSystem().registerCommand("命令名", new 你的命令类 ()) 来注册命令
     }
 
     /**

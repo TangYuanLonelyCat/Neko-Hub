@@ -2,6 +2,7 @@ package net.lemoncookie.neko.modloader.broadcast;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * 广播域类
@@ -19,7 +20,7 @@ public class BroadcastDomain {
      */
     public BroadcastDomain(String name, boolean isPrivate, boolean isPublic, String ownerModId) {
         this.name = name;
-        this.listeners = new HashSet<>();
+        this.listeners = new CopyOnWriteArraySet<>();
         this.isPrivate = isPrivate;
         this.isPublic = isPublic;
         this.ownerModId = ownerModId;

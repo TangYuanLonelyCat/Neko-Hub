@@ -221,6 +221,12 @@ public class BroadcastManager {
 
     /**
      * 检查模组是否有权限访问域
+     * 
+     * 权限规则：
+     * 1. 超级管理员（level 0）：所有权限
+     * 2. 系统级组件（level 1）：可访问公共域和系统域
+     * 3. 正常组件（level 2）：只能访问公共域
+     * 4. 限权组件（level 3）：只能监听，不能发送
      */
     private boolean hasPermissionToAccessDomain(String domainName, String modId) {
         BroadcastDomain domain = domains.get(domainName);
@@ -229,48 +235,38 @@ public class BroadcastManager {
         }
         
         ModPermission modPermission = permissionManager.getModPermission(modId);
+        int level = modPermission.getLevel();
         
-        // 超级管理员拥有所有权限
-        if (modPermission == ModPermission.SUPER_ADMIN) {
+        // 规则 1：超级管理员拥有所有权限
+        if (level == 0) {
             return true;
         }
         
-        // 检查是否是域所有者
+        // 规则 4：限权组件只能监听，不能发送
+        if (level == 3) {
+            return false;
+        }
+        
+        // 检查是否是域所有者（所有者始终可以访问自己的域）
         if (domain.getOwnerModId().equals(modId)) {
             return true;
         }
         
-        // Hub.System 视为公开私有域处理
-        if (HUB_SYSTEM.equals(domainName)) {
-            // 需要权限等级 1 或更低，并且需要获取权限
-            if (modPermission.getLevel() <= 1) {
+        // 规则 2：系统级组件可访问公共域和系统域
+        if (level == 1) {
+            // 系统域需要额外检查是否已授权
+            if (HUB_SYSTEM.equals(domainName)) {
                 Map<String, Boolean> permissions = domainPermissions.get(domainName);
                 return permissions != null && permissions.getOrDefault(modId, false);
             }
-            return false;
+            // 公共域（包括公开公共域和普通公共域）
+            return !domain.isPrivate();
         }
         
-        // 公开公共域（Hub.ALL）
-        if (!domain.isPrivate() && domain.isPublic()) {
-            // 所有模组（除 level=3 外）都有权限
-            return modPermission.getLevel() <= 2;
-        }
-        
-        // 公共域（非私有，非公开）
-        if (!domain.isPrivate() && !domain.isPublic()) {
-            // 需要权限等级 2 或更低
-            return modPermission.getLevel() <= 2;
-        }
-        
-        // 私有域
-        if (domain.isPrivate()) {
-            // 公开私有域需要检查权限
-            if (domain.isPublic()) {
-                Map<String, Boolean> permissions = domainPermissions.get(domainName);
-                return permissions != null && permissions.getOrDefault(modId, false);
-            }
-            // 非公开私有域只能由所有者访问
-            return false;
+        // 规则 3：正常组件只能访问公共域
+        if (level == 2) {
+            // 只能访问公开公共域（Hub.ALL）
+            return !domain.isPrivate() && domain.isPublic();
         }
         
         return false;

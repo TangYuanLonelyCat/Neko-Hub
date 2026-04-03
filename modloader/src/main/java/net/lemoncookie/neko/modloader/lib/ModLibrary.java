@@ -1,21 +1,31 @@
 package net.lemoncookie.neko.modloader.lib;
 
+import net.lemoncookie.neko.modloader.ModLoader;
+
 import java.util.*;
 
 /**
- * Java版模组库支持类
- * 提供Java模组开发所需的库功能
+ * Java 版模组库支持类
+ * 提供 Java 模组开发所需的库功能
  */
 public class ModLibrary {
 
     private final Map<String, Object> registry = new HashMap<>();
+    private ModLoader modLoader;
+
+    /**
+     * 设置 ModLoader 引用（用于日志输出）
+     */
+    public void setModLoader(ModLoader modLoader) {
+        this.modLoader = modLoader;
+    }
 
     /**
      * 注册库组件
      */
     public void register(String name, Object component) {
         registry.put(name, component);
-        System.out.println("[ModLibrary] Registered: " + name);
+        logMessage("[ModLibrary] Registered: " + name);
     }
 
     /**
@@ -38,5 +48,16 @@ public class ModLibrary {
      */
     public Set<String> getRegisteredNames() {
         return Collections.unmodifiableSet(registry.keySet());
+    }
+
+    /**
+     * 输出日志消息
+     */
+    private void logMessage(String message) {
+        if (modLoader != null) {
+            modLoader.getBroadcastManager().broadcast("Hub.Console", message, "ModLibrary");
+        } else {
+            System.out.println(message);
+        }
     }
 }

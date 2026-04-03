@@ -2,7 +2,11 @@ package net.lemoncookie.neko.modloader.boot;
 
 import net.lemoncookie.neko.modloader.ModLoader;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +29,23 @@ public class BootFileManager {
      * @return 命令列表，如果读取失败返回 null
      */
     public List<String> readBootFile(String fileName) {
-        File bootFile = new File(fileName);
+        File bootFile;
+        try {
+            File projectRoot = new File(".").getCanonicalFile();
+            bootFile = new File(fileName).getCanonicalFile();
+            
+            // 确保 boot 文件在项目根目录内
+            String bootFilePath = bootFile.getCanonicalPath();
+            String projectRootPath = projectRoot.getCanonicalPath();
+            if (!bootFilePath.startsWith(projectRootPath + File.separator) && !bootFilePath.equals(projectRootPath)) {
+                modLoader.getConsole().printError("Invalid boot file path: " + fileName);
+                return null;
+            }
+        } catch (IOException e) {
+            modLoader.getConsole().printError("Invalid boot file path: " + fileName);
+            return null;
+        }
+        
         if (!bootFile.exists() || !bootFile.canRead()) {
             return null;
         }

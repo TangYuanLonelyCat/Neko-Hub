@@ -4,6 +4,7 @@ import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.api.IModAPI;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.jar.JarFile;
@@ -20,15 +21,15 @@ public class LoadCommand implements Command {
     public void execute(ModLoader modLoader, String args) {
         if (args.isEmpty()) {
             modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.error.args", "/load [模组文件名]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/load [模组文件名]")
             );
             return;
         }
 
         // 移除可能的引号
         args = args.trim();
-        if ((args.startsWith("\"") && args.endsWith("\"")) ||
-                (args.startsWith("'") && args.endsWith("'"))) {
+        if ((args.startsWith("\"") && args.endsWith("\"")) || 
+            (args.startsWith("'") && args.endsWith("'"))) {
             args = args.substring(1, args.length() - 1);
         }
 
@@ -45,12 +46,22 @@ public class LoadCommand implements Command {
      * 通过文件名加载模组
      */
     private void loadModByFileName(ModLoader modLoader, String fileName) {
-        // 确保文件名以.jar 结尾
-        if (!fileName.endsWith(".jar")) {
-            fileName = fileName + ".jar";
+        File modsDir;
+        File modFile;
+        try {
+            modsDir = new File("mods").getCanonicalFile();
+            modFile = new File(modsDir, fileName).getCanonicalFile();
+            
+            // 确保文件在 mods 目录内
+            if (!modFile.getCanonicalPath().startsWith(modsDir.getCanonicalPath() + File.separator)) {
+                modLoader.getConsole().printError("Invalid mod file path: " + fileName);
+                return;
+            }
+        } catch (IOException e) {
+            modLoader.getConsole().printError("Invalid mod file path: " + fileName);
+            return;
         }
-
-        File modFile = new File("mods", fileName);
+        
         if (!modFile.exists()) {
             modLoader.getConsole().printError("Mod file not found: " + fileName);
             return;
@@ -75,11 +86,11 @@ public class LoadCommand implements Command {
         modLoader.getConsole().printInfo("Loading mod from: " + modFile.getAbsolutePath());
 
         IModAPI modInstance = null;
-
+        
         // 读取 MANIFEST.MF 获取主类
         try (JarFile jarFile = new JarFile(modFile)) {
             Manifest manifest = jarFile.getManifest();
-
+            
             if (manifest == null) {
                 throw new Exception("No manifest found in JAR file");
             }
@@ -98,23 +109,35 @@ public class LoadCommand implements Command {
             // 创建 URLClassLoader 加载 JAR 文件
             URL jarUrl = modFile.toURI().toURL();
             try (URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{jarUrl}, ModLoader.class.getClassLoader())) {
-                // 加载模组类
-                Class<?> modClass = urlClassLoader.loadClass(modClassName);
+                try {
+                    // 加载模组类
+                    Class<?> modClass = urlClassLoader.loadClass(modClassName);
+                    
+                    // 检查是否实现了 IModAPI 接口
+                    if (!IModAPI.class.isAssignableFrom(modClass)) {
+                        throw new Exception("Mod class does not implement IModAPI: " + modClassName);
+                    }
 
-                // 检查是否实现了 IModAPI 接口
-                if (!IModAPI.class.isAssignableFrom(modClass)) {
-                    throw new Exception("Mod class does not implement IModAPI: " + modClassName);
+                    // 创建模组实例
+                    Constructor<?> constructor = modClass.getDeclaredConstructor();
+                    modInstance = (IModAPI) constructor.newInstance();
+
+                    // 检查模组 ID 是否重复
+                    for (IModAPI loadedMod : modLoader.getJavaMods()) {
+                        if (loadedMod.getModId().equals(modInstance.getModId())) {
+                            throw new Exception("Mod with ID '" + modInstance.getModId() + "' is already loaded");
+                        }
+                    }
+
+                    // 注册模组
+                    modLoader.registerJavaMod(modInstance);
+                } catch (Exception e) {
+                    modLoader.getConsole().printWarning("Error during mod loading: " + e.getMessage());
+                    throw e;
                 }
-
-                // 创建模组实例
-                Constructor<?> constructor = modClass.getDeclaredConstructor();
-                modInstance = (IModAPI) constructor.newInstance();
-
-                // 注册模组
-                modLoader.registerJavaMod(modInstance);
             }
         }
-
+        
         if (modInstance != null) {
             modLoader.getConsole().printSuccess("Mod loaded successfully: " + modInstance.getName());
         }
