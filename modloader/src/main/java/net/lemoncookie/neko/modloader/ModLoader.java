@@ -56,7 +56,7 @@ public class ModLoader {
         this.broadcastManager = new BroadcastManager(this);
         this.bootFileManager = new BootFileManager(this);
         this.configManager = new ConfigManager(this);
-        
+
         // 自动创建 mods 文件夹
         createModsFolder();
     }
@@ -111,29 +111,29 @@ public class ModLoader {
     private void loadBootFile() {
         String bootFileName = configManager.getBootFile();
         File bootFile = new File(bootFileName);
-        
+
         // 检查是否是默认 boot 文件（auto.boot）
         boolean isDefaultBootFile = "auto.boot".equals(bootFileName);
-        
+
         if (!bootFile.exists() || !bootFile.canRead()) {
             // 如果是默认 boot 文件不存在，自动创建
             if (isDefaultBootFile) {
                 console.printLine("Creating default auto.boot file...");
                 bootFileManager.generateAutoBoot();
-                
+
                 // 重新检查文件是否创建成功
                 if (bootFile.exists() && bootFile.canRead()) {
                     console.printLine("Loading boot file: " + bootFileName);
                     bootFileManager.executeBootFile(bootFileName);
                 } else {
                     console.printError(
-                        languageManager.getMessage("boot.error.not_found")
+                            languageManager.getMessage("boot.error.not_found")
                     );
                 }
             } else {
                 // 用户指定的 boot 文件不存在，只显示错误
                 console.printError(
-                    languageManager.getMessage("boot.error.not_found")
+                        languageManager.getMessage("boot.error.not_found")
                 );
             }
         } else {
@@ -162,16 +162,16 @@ public class ModLoader {
         }
 
         javaMods.add(mod);
-        
+
         // 调用模组加载方法
         mod.onLoad(this);
-        
+
         // 注册命令
         mod.registerCommands(this);
-        
+
         // 注册广播域监听器
         mod.registerBroadcastListeners(this);
-        
+
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getVersion()));
     }
 
@@ -202,20 +202,20 @@ public class ModLoader {
      * 注册 Kotlin 模组
      */
     public void registerKotlinMod(ModAPI mod) {
-        if (!isApiVersionCompatible(mod.getInfo().version())) {
+        if (!isApiVersionCompatible(mod.getInfo().getVersion())) {
             console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
             return;
         }
 
         kotlinMods.add(mod);
-        
+
         mod.onLoad(this);
-        
+
         mod.registerCommands(this);
-        
+
         mod.registerBroadcastListeners(this);
-        
-        console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getInfo().version()));
+
+        console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getInfo().getVersion()));
     }
 
     /**

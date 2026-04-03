@@ -1,4 +1,4 @@
-package net.lemoncookie.neko.modloader.api.kt
+package net.lemoncookie.neko.modloader.api
 
 import net.lemoncookie.neko.modloader.ModLoader
 

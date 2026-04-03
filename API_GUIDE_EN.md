@@ -57,7 +57,7 @@ modloader/
     ├── api/
     │   └── ModAPI.kt             # Kotlin API interface
     └── lib/
-        └── ModLibrary.kt         # Kotlin library support
+        └── KotlinModLibrary.kt         # Kotlin library support
 ```
 
 #### Console System (`net.lemoncookie.neko.modloader.console`)
@@ -359,7 +359,7 @@ data class ModInfo(val id: String, val name: String, val version: String)
 
 ```kotlin
 // Kotlin library support (DSL style)
-class ModLibrary {
+class KotlinModLibrary {
     fun register(name: String, component: Any)
     operator fun <T> get(name: String): T?
     operator fun contains(name: String): Boolean
@@ -368,7 +368,7 @@ class ModLibrary {
     fun registerAll(vararg pairs: Pair<String, Any>)
 }
 
-inline fun modLibrary(block: ModLibrary.() -> Unit): ModLibrary
+inline fun kotlinModLibrary(block: KotlinModLibrary.() -> Unit): KotlinModLibrary
 ```
 
 #### Main Entry Class
@@ -555,21 +555,21 @@ loader.registerJavaMod(new MyJavaMod());
 ```kotlin
 import net.lemoncookie.neko.modloader.api.ModAPI
 import net.lemoncookie.neko.modloader.ModLoader
-import net.lemoncookie.neko.modloader.lib.modLibrary
+import net.lemoncookie.neko.modloader.lib.kotlinModLibrary
 
 class MyKotlinMod : ModAPI {
-    override val modId = "my-kotlin-mod"
-    override val version = "1.0.0"
-    override val packageName = "com.example.mykotlinmod"
-    override val name = "My Kotlin Mod"
+   override val modId = "my-kotlin-mod"
+   override val version = "1.0.0"
+   override val packageName = "com.example.mykotlinmod"
+   override val name = "My Kotlin Mod"
 
-    override fun onLoad(modLoader: ModLoader) {
-        modLoader.getConsole().printLine("Kotlin mod loaded!")
-    }
+   override fun onLoad(modLoader: ModLoader) {
+      modLoader.getConsole().printLine("Kotlin mod loaded!")
+   }
 
-    override fun onUnload() {
-        println("Kotlin mod unloaded!")
-    }
+   override fun onUnload() {
+      println("Kotlin mod unloaded!")
+   }
 }
 
 // Register mod
@@ -578,9 +578,9 @@ loader.initialize()
 loader.registerKotlinMod(MyKotlinMod())
 
 // Use Kotlin library DSL
-val lib = modLibrary {
-    register("config") { loadConfig() }
-    register("database", Database())
+val lib = kotlinModLibrary {
+   register("config") { loadConfig() }
+   register("database", Database())
 }
 ```
 
@@ -588,7 +588,7 @@ val lib = modLibrary {
 
 1. **Java Version**: All modules must use Java 21
 2. **Package Naming**: Follow `net.lemoncookie.neko.{module}` convention
-3. **API Design**: 
+3. **API Design**:
    - Java API uses traditional OOP style
    - Kotlin API uses DSL and functional style
 4. **Core Stability**: Core functionality uses Java 21 implementation

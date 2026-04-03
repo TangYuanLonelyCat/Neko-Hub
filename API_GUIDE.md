@@ -57,12 +57,12 @@ modloader/
     ├── api/
     │   └── ModAPI.kt             # Kotlin 版 API 接口
     └── lib/
-        └── ModLibrary.kt         # Kotlin 版库支持
+        └── KotlinModLibrary.kt         # Kotlin 版库支持
 ```
 
 #### 控制台系统 (`net.lemoncookie.neko.modloader.console`)
 
-控制台系统负责显示信息和处理用户输入，支持彩色输出。
+控制台系统负责显示信息和处理用户输入，支持彩色输出和广播域消息显示。
 
 ```java
 // 控制台类
@@ -80,6 +80,9 @@ public class Console {
     public void printWarning(String text)  // 黄色
     public void printSuccess(String text)  // 绿色
     public void printInfo(String text)     // 蓝色
+    public void printCyan(String text)     // 青色
+    public void printMagenta(String text)  // 紫色
+    public void printWhite(String text)    // 白色
     
     // 交互式控制台
     public void startInteractive()
@@ -89,6 +92,88 @@ public class Console {
     public String readLine() throws IOException
     public boolean readConfirmation() throws IOException
     public void close()
+}
+```
+
+#### Boot 文件系统 (`net.lemoncookie.neko.modloader.boot`)
+
+Boot 文件系统用于在启动时自动执行命令序列，支持自定义 boot 文件。
+
+```java
+// Boot 文件管理器
+public class BootFileManager {
+    // 构造函数
+    public BootFileManager(ModLoader modLoader)
+    
+    // Boot 文件操作
+    public List<String> readBootFile(String fileName)
+    public boolean executeBootFile(String fileName)
+    public void generateAutoBoot()                    // 生成 auto.boot
+    public void setCurrentBootFile(String fileName)
+    public String getCurrentBootFile()
+    public boolean executeCurrentBootFile()
+}
+```
+
+**Boot 文件语法：**
+- 每行一个命令
+- 支持 `/load`、`/unload`、`/set` 等所有命令
+- 以 `#` 开头的行为注释
+- 默认文件名为 `auto.boot`
+
+**示例：**
+```
+# auto.boot 示例
+/load com.example.mod
+/load com.example.moda
+/set modPermission com.example.moda 1
+```
+
+#### 配置管理 (`net.lemoncookie.neko.modloader.config`)
+
+配置管理系统用于持久化存储配置信息。
+
+```java
+// 配置管理器
+public class ConfigManager {
+    // 构造函数
+    public ConfigManager(ModLoader modLoader)
+    
+    // 配置操作
+    public String getConfig(String key, String defaultValue)
+    public void setConfig(String key, String value)
+    
+    // Boot 文件配置
+    public String getBootFile()
+    public void setBootFile(String fileName)
+    
+    // 模组权限配置
+    public ModPermission getModPermission(String modId)
+    public void setModPermission(String modId, int level)
+    public Map<String, Integer> getAllModPermissions()
+}
+```
+
+#### 控制台模组 (`net.lemoncookie.neko.modloader.consolemod`)
+
+控制台模组是优先加载的系统模组，负责创建系统域和显示消息。
+
+```java
+// 控制台模组
+public class ConsoleMod implements IModAPI {
+    // 模组信息
+    public String getModId()         // 返回 "console-mod"
+    public String getVersion()       // 返回 "1.0.0"
+    public String getPackageName()   // 返回 "net.lemoncookie.neko.modloader.consolemod"
+    public String getName()          // 返回 "Console Mod"
+    
+    // 生命周期
+    public void onLoad(ModLoader modLoader)    // 创建 Hub.System 和 Hub.Console 域
+    public void onUnload()
+    
+    // 注册方法
+    public void registerCommands(ModLoader modLoader)
+    public void registerBroadcastListeners(ModLoader modLoader)
 }
 ```
 
@@ -111,38 +196,68 @@ public class CommandSystem {
 // 命令接口
 public interface Command {
     void execute(ModLoader modLoader, String args) throws Exception;
+    String getDescription();
+    String getUsage();
 }
 ```
 
-内置命令：
-- `/help` - 显示帮助信息
+**内置命令：**
+- `/help` - 显示可用命令
 - `/clear` - 清空控制台
-- `/load` - 加载模组
-- `/unload` - 卸载模组
+- `/load [模组包名或文件名]` - 加载模组（支持包名或文件名，不支持路径）
+- `/unload [模组包名或文件名]` - 卸载模组
+- `/set modPermission [模组名] [level 值]` - 设置模组权限（level 0-3）
+- `/set bootfile [文件名]` - 设置 boot 文件名
+- `/autoboot` - 扫描 mods 文件夹并生成 auto.boot 文件
 
 #### 广播域系统 (`net.lemoncookie.neko.modloader.broadcast`)
 
-广播域系统用于模组之间的通信，支持公共域和私有域。
+广播域系统用于模组之间的通信，支持多种域类型和权限控制。
+
+**域类型：**
+- **公开公共域** (`isPrivate=false, isPublic=true`)：所有模组（除 level=3 外）都有权限监听和发送
+- **公开私有域** (`isPrivate=true, isPublic=true`)：需要获取权限才能监听和发送
+- **私有域** (`isPrivate=true, isPublic=false`)：只能由所有者访问
+
+**权限等级：**
+- **SUPER_ADMIN (level 0)**：超级管理员，拥有所有域的权限
+- **SYSTEM_COMPONENT (level 1)**：系统级组件，拥有大多数域的权限
+- **NORMAL_COMPONENT (level 2)**：正常组件，拥有公共域和自身私有域的权限（默认）
+- **RESTRICTED_COMPONENT (level 3)**：限权组件，仅拥有监听权限
 
 ```java
 // 广播域管理器
 public class BroadcastManager {
     // 系统广播域
-    public static final String HUB_ALL = "Hub.ALL";
-    public static final String HUB_SYSTEM = "Hub.System";
+    public static final String HUB_ALL = "Hub.ALL";         // 公开公共域
+    public static final String HUB_SYSTEM = "Hub.System";   // 公开私有域
+    public static final String HUB_CONSOLE = "Hub.Console"; // 公开公共域（控制台）
+    
+    // 错误码
+    public static final int ERROR_SUCCESS = 0;              // 操作成功
+    public static final int ERROR_PERMISSION_DENIED = 502;  // 权限不足
+    public static final int ERROR_DOMAIN_NOT_FOUND = 404;   // 域不存在
+    public static final int ERROR_DOMAIN_EXISTS = 402;      // 域已存在
     
     // 构造函数
     public BroadcastManager(ModLoader modLoader)
     
     // 广播域管理
-    public boolean addDomain(String name, boolean isPrivate, String ownerModId)
+    public int addDomain(String name, boolean isPrivate, boolean isPublic, String ownerModId)
     public BroadcastDomain getDomain(String name)
-    public boolean removeDomain(String name, String modId)
+    public int removeDomain(String name, String modId)
+    public int createSystemDomain(String ownerModId)        // 创建系统域
+    public int createConsoleDomain(String ownerModId)       // 创建控制台域
     
     // 广播功能
-    public void broadcast(String domainName, String message, String senderModId)
-    public boolean listen(String domainName, MessageListener listener, String modId, String modName)
-    public boolean listenPrivate(String modId, MessageListener listener)
+    public int broadcast(String domainName, String message, String senderModId)
+    public int listen(String domainName, MessageListener listener, String modId, String modName)
+    public int listenPrivate(String modId, MessageListener listener)
+    
+    // 权限管理
+    public int requestDomainPermission(String domainName, String modId, String modName)
+    public int requestPermissionUpgrade(String modId, String modName, int targetLevel)
+    public PermissionManager getPermissionManager()
     
     // 其他方法
     public Map<String, BroadcastDomain> getDomains()
@@ -150,9 +265,40 @@ public class BroadcastManager {
     public boolean hasDomain(String name)
 }
 
+// 广播域类
+public class BroadcastDomain {
+    public String getName()
+    public boolean isPrivate()
+    public boolean isPublic()
+    public String getOwnerModId()
+    public boolean addListener(MessageListener listener, String modId)
+    public boolean removeListener(MessageListener listener)
+    public void broadcast(String message, String senderModId)
+}
+
 // 消息监听器接口
 public interface MessageListener {
-    void onMessage(String domain, String message, String senderModId);
+    void onMessageReceived(String domain, String message, String senderModId);
+}
+
+// 权限枚举
+public enum ModPermission {
+    SUPER_ADMIN(0, "超级管理员"),
+    SYSTEM_COMPONENT(1, "系统级组件"),
+    NORMAL_COMPONENT(2, "正常组件"),
+    RESTRICTED_COMPONENT(3, "限权组件");
+    
+    public int getLevel()
+    public String getDisplayName()
+    public static ModPermission fromLevel(int level)
+}
+
+// 权限管理器
+public class PermissionManager {
+    public ModPermission getModPermission(String modId)
+    public void setModPermission(String modId, ModPermission permission)
+    public boolean hasPermission(String modId, ModPermission requiredPermission)
+    public boolean hasLevelPermission(String modId, int requiredLevel)
 }
 ```
 
@@ -213,7 +359,7 @@ data class ModInfo(val id: String, val name: String, val version: String)
 
 ```kotlin
 // Kotlin 版库支持（DSL 风格）
-class ModLibrary {
+class KotlinModLibrary {
     fun register(name: String, component: Any)
     operator fun <T> get(name: String): T?
     operator fun contains(name: String): Boolean
@@ -222,7 +368,7 @@ class ModLibrary {
     fun registerAll(vararg pairs: Pair<String, Any>)
 }
 
-inline fun modLibrary(block: ModLibrary.() -> Unit): ModLibrary
+inline fun kotlinModLibrary(block: KotlinModLibrary.() -> Unit): KotlinModLibrary
 ```
 
 #### 主入口类
@@ -299,45 +445,71 @@ dependencies {
 
 ## 模组加载器行为
 
-### 终端模式
+### 模组加载器行为
+
+#### 启动流程
+
+1. **初始化**：创建 ModLoader 实例并调用 initialize() 方法
+2. **创建 mods 文件夹**：如果不存在自动创建
+3. **加载控制台模组**：优先加载控制台模组（默认权限 SUPER_ADMIN）
+4. **加载 boot 文件**：
+   - 默认加载 `auto.boot` 文件
+   - 如果 `auto.boot` 不存在，自动创建并执行
+   - 如果用户指定的 boot 文件不存在，显示错误但不创建
+5. **启动控制台交互**：启动交互式控制台
+
+#### Boot 文件系统
+
+Boot 文件是命令序列文件，在模组加载器初始化时执行：
+
+- **默认文件名**：`auto.boot`
+- **首次启动**：自动创建 `auto.boot` 文件
+- **自定义 boot 文件**：通过 `/set bootfile [文件名]` 设置
+- **生成 auto.boot**：通过 `/autoboot` 命令扫描 mods 文件夹生成
+
+#### 权限系统
+
+模组权限系统控制模组对广播域的访问：
+
+- **默认权限**：普通模组默认为 NORMAL_COMPONENT (level 2)
+- **控制台模组**：默认为 SUPER_ADMIN (level 0)
+- **设置权限**：通过 `/set modPermission [模组名] [level 值]` 设置
+- **权限持久化**：权限配置保存在 `neko-hub.config` 文件中
+
+#### 终端模式
 
 Neko-Hub 支持 CLI 模式，通过控制台与用户交互。控制台系统支持：
 
-- **彩色输出**：使用 ANSI 颜色代码，支持红色（错误）、黄色（警告）、绿色（成功）和蓝色（信息）
+- **彩色输出**：使用 ANSI 颜色代码，支持红色（错误）、黄色（警告）、绿色（成功）、蓝色（信息）等
 - **交互式命令**：用户可以输入命令与系统交互
+- **广播域消息**：控制台监听 Hub.Console 域，显示所有模组发送的消息
 - **跨平台支持**：在 Windows 和 Unix-like 系统上都能正常工作
-- **UTF-8 编码**：支持中文等非ASCII字符
+- **UTF-8 编码**：支持中文等非 ASCII 字符
 
-### 命令系统运行原理
+#### 命令系统运行原理
 
 命令系统的工作流程：
 
 1. **命令注册**：系统启动时注册内置命令，模组也可以注册自定义命令
-2. **命令解析**：解析用户输入，提取命令名和参数
+2. **命令解析**：解析用户输入，提取命令名和参数（支持引号包裹的参数）
 3. **命令执行**：找到对应的命令实现并执行
 4. **错误处理**：捕获并显示命令执行过程中的错误
 
-### 模组加载流程
-
-1. **初始化**：创建 ModLoader 实例并调用 initialize() 方法
-2. **模组扫描**：扫描和加载模组
-3. **命令注册**：模组注册自定义命令
-4. **广播域监听**：模组注册广播域监听器
-5. **控制台启动**：启动交互式控制台
-
-### 广播域系统使用
+#### 广播域系统使用
 
 广播域系统允许模组之间进行通信：
 
-- **公共域**：所有模组都可以监听和发送消息
-- **私有域**：只有特定模组可以访问
-- **系统域**：系统级别的广播域，需要用户确认才能监听
+- **Hub.ALL**：公开公共域，所有模组（除 level=3 外）都可以监听和发送
+- **Hub.System**：公开私有域，需要权限等级 1 或更低，并且需要用户确认获取权限
+- **Hub.Console**：公开公共域，控制台模组创建，用于显示消息
+- **私有域**：格式为 `Hub.[modId]`，只能由所有者访问
+- **公开私有域**：需要获取权限才能监听和发送
 
-### 语言系统使用
+#### 语言系统使用
 
 语言系统支持多语言：
 
-- **默认语言**：英语（en）
+- **默认语言**：中文（zh）
 - **语言文件**：位于 resources/lang/ 目录下
 - **动态切换**：可以在运行时切换语言
 - **消息格式化**：支持带参数的消息格式化
@@ -383,7 +555,7 @@ loader.registerJavaMod(new MyJavaMod());
 ```kotlin
 import net.lemoncookie.neko.modloader.api.ModAPI
 import net.lemoncookie.neko.modloader.ModLoader
-import net.lemoncookie.neko.modloader.lib.modLibrary
+import net.lemoncookie.neko.modloader.lib.kotlinModLibrary
 
 class MyKotlinMod : ModAPI {
     override val modId = "my-kotlin-mod"
@@ -406,7 +578,7 @@ loader.initialize()
 loader.registerKotlinMod(MyKotlinMod())
 
 // 使用 Kotlin 版库的 DSL
-val lib = modLibrary {
+val lib = kotlinModLibrary {
     register("config") { loadConfig() }
     register("database", Database())
 }
@@ -416,7 +588,7 @@ val lib = modLibrary {
 
 1. **Java版本**: 所有模块必须使用 Java 21
 2. **包命名**: 遵循 `net.lemoncookie.neko.{module}` 规范
-3. **API设计**: 
+3. **API设计**:
    - Java API 使用传统面向对象风格
    - Kotlin API 使用 DSL 和函数式风格
 4. **核心稳定性**: 核心功能使用 Java 21 实现
