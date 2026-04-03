@@ -9,9 +9,13 @@ import net.lemoncookie.neko.modloader.ModLoader;
 public class AutobootCommand implements Command {
 
     @Override
-    public void execute(ModLoader modLoader, String args) throws Exception {
-        // 生成 auto.boot 文件
-        modLoader.getBootFileManager().generateAutoBoot();
+    public void execute(ModLoader modLoader, String args) {
+        try {
+            // 生成 auto.boot 文件
+            modLoader.getBootFileManager().generateAutoBoot();
+        } catch (Exception e) {
+            modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
+        }
     }
 
     @Override

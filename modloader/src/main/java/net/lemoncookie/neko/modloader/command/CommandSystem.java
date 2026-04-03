@@ -20,7 +20,7 @@ public class CommandSystem {
     public CommandSystem(ModLoader modLoader) {
         this.modLoader = modLoader;
         this.commands = new HashMap<>();
-        
+
         // 注册内置命令
         registerCommands();
     }
@@ -35,6 +35,7 @@ public class CommandSystem {
         registerCommand("unload", new UnloadCommand());
         registerCommand("set", new SetCommand());
         registerCommand("autoboot", new AutobootCommand());
+        registerCommand("exit", new ExitCommand());
     }
 
     /**
@@ -53,14 +54,14 @@ public class CommandSystem {
         if (parts.length == 0) {
             return;
         }
-        
+
         String commandName = parts[0];
         String args = parts.length > 1 ? parts[1] : "";
-        
+
         // 检查是否是斜杠命令
         if (commandName.startsWith("/")) {
             commandName = commandName.substring(1);
-            
+
             // 查找命令
             Command command = commands.get(commandName.toLowerCase());
             if (command != null) {
@@ -71,19 +72,19 @@ public class CommandSystem {
                 }
             } else {
                 modLoader.getConsole().printLine(
-                    modLoader.getLanguageManager().getMessage("command.error.unknown", "/" + commandName)
+                        modLoader.getLanguageManager().getMessage("command.error.unknown", "/" + commandName)
                 );
                 modLoader.getConsole().printLine(
-                    modLoader.getLanguageManager().getMessage("command.error.usage")
+                        modLoader.getLanguageManager().getMessage("command.error.usage")
                 );
             }
         } else {
             // 非命令输入，可能是其他指令
             modLoader.getConsole().printLine(
-                modLoader.getLanguageManager().getMessage("command.error.unknown", input)
+                    modLoader.getLanguageManager().getMessage("command.error.unknown", input)
             );
             modLoader.getConsole().printLine(
-                modLoader.getLanguageManager().getMessage("command.error.usage")
+                    modLoader.getLanguageManager().getMessage("command.error.usage")
             );
         }
     }

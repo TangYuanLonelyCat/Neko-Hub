@@ -7,7 +7,6 @@ import net.lemoncookie.neko.modloader.command.CommandSystem;
 import net.lemoncookie.neko.modloader.console.Console;
 import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 import net.lemoncookie.neko.modloader.lang.LanguageManager;
-import net.lemoncookie.neko.modloader.broadcast.ModPermission;
 import net.lemoncookie.neko.modloader.boot.BootFileManager;
 import net.lemoncookie.neko.modloader.config.ConfigManager;
 import net.lemoncookie.neko.modloader.consolemod.ConsoleMod;
@@ -67,7 +66,10 @@ public class ModLoader {
     private void createModsFolder() {
         File modsDir = new File("mods");
         if (!modsDir.exists()) {
-            modsDir.mkdirs();
+            boolean created = modsDir.mkdirs();
+            if (!created) {
+                console.printWarning("Failed to create mods directory");
+            }
         }
     }
 
@@ -156,21 +158,39 @@ public class ModLoader {
      */
     public void registerJavaMod(IModAPI mod) {
         // 检查 API 版本
-        if (!isApiVersionCompatible(mod.getVersion())) {
+        if (isApiVersionIncompatible(mod.getVersion())) {
             console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
             return;
         }
 
         javaMods.add(mod);
 
-        // 调用模组加载方法
-        mod.onLoad(this);
+        // 调用模组加载方法，捕获异常确保框架稳定
+        try {
+            mod.onLoad(this);
+        } catch (Exception e) {
+            String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
+            console.printError(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+        }
 
         // 注册命令
-        mod.registerCommands(this);
+        try {
+            mod.registerCommands(this);
+        } catch (Exception e) {
+            String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
+            console.printWarning(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+        }
 
         // 注册广播域监听器
-        mod.registerBroadcastListeners(this);
+        try {
+            mod.registerBroadcastListeners(this);
+        } catch (Exception e) {
+            String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
+            console.printWarning(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+        }
 
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getVersion()));
     }
@@ -182,6 +202,15 @@ public class ModLoader {
         // 简单的版本比较逻辑
         // 实际项目中应该使用更复杂的版本比较
         return modApiVersion.compareTo(MIN_API_VERSION) >= 0;
+    }
+
+    /**
+     * 检查 API 版本不兼容
+     * @param modApiVersion 模组 API 版本
+     * @return 是否不兼容
+     */
+    private boolean isApiVersionIncompatible(String modApiVersion) {
+        return !isApiVersionCompatible(modApiVersion);
     }
 
     /**
@@ -202,18 +231,39 @@ public class ModLoader {
      * 注册 Kotlin 模组
      */
     public void registerKotlinMod(ModAPI mod) {
-        if (!isApiVersionCompatible(mod.getInfo().getVersion())) {
+        if (isApiVersionIncompatible(mod.getInfo().getVersion())) {
             console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
             return;
         }
 
         kotlinMods.add(mod);
 
-        mod.onLoad(this);
+        // 调用模组加载方法，捕获异常确保框架稳定
+        try {
+            mod.onLoad(this);
+        } catch (Exception e) {
+            String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
+            console.printError(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+        }
 
-        mod.registerCommands(this);
+        // 注册命令
+        try {
+            mod.registerCommands(this);
+        } catch (Exception e) {
+            String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
+            console.printWarning(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+        }
 
-        mod.registerBroadcastListeners(this);
+        // 注册广播域监听器
+        try {
+            mod.registerBroadcastListeners(this);
+        } catch (Exception e) {
+            String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
+            console.printWarning(errorMsg);
+            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+        }
 
         console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getInfo().getVersion()));
     }
@@ -234,6 +284,48 @@ public class ModLoader {
         kotlinMods.forEach(ModAPI::onUnload);
         kotlinMods.clear();
         console.printLine(languageManager.getMessage("modloader.success.unloaded"));
+    }
+
+    /**
+     * 卸载指定模组
+     * @param modName 模组名称或模组 ID
+     * @return 是否卸载成功
+     */
+    public boolean unloadMod(String modName) {
+        // 尝试从 Java 模组中查找并卸载
+        for (IModAPI javaMod : javaMods) {
+            if (javaMod.getModId().equals(modName) || javaMod.getName().equals(modName)) {
+                try {
+                    javaMod.onUnload();
+                } catch (Exception e) {
+                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                    console.printError(errorMsg);
+                    broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                }
+                javaMods.remove(javaMod);
+                console.printSuccess("Mod unloaded successfully: " + modName);
+                return true;
+            }
+        }
+
+        // 尝试从 Kotlin 模组中查找并卸载
+        for (ModAPI kotlinMod : kotlinMods) {
+            if (kotlinMod.getModId().equals(modName) || kotlinMod.getName().equals(modName)) {
+                try {
+                    kotlinMod.onUnload();
+                } catch (Exception e) {
+                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                    console.printError(errorMsg);
+                    broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                }
+                kotlinMods.remove(kotlinMod);
+                console.printSuccess("Mod unloaded successfully: " + modName);
+                return true;
+            }
+        }
+
+        console.printError("Mod not found: " + modName);
+        return false;
     }
 
     /**
@@ -319,5 +411,12 @@ public class ModLoader {
     public static void main(String[] args) {
         ModLoader loader = new ModLoader();
         loader.initialize();
+
+        // 保持主线程运行，等待控制台输入
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

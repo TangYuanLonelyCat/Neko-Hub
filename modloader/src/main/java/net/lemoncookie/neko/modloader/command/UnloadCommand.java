@@ -4,44 +4,49 @@ import net.lemoncookie.neko.modloader.ModLoader;
 
 /**
  * 卸载模组命令
- * 支持包名和文件名卸载
+ * 通过模组名称卸载
  */
 public class UnloadCommand implements Command {
 
     @Override
-    public void execute(ModLoader modLoader, String args) throws Exception {
+    public void execute(ModLoader modLoader, String args) {
         if (args.isEmpty()) {
             modLoader.getConsole().printError(
-                modLoader.getLanguageManager().getMessage("command.error.args", "/unload [模组包名或文件名]")
+                    modLoader.getLanguageManager().getMessage("command.error.args", "/unload [模组名称]")
             );
             return;
         }
 
         // 移除可能的引号
         args = args.trim();
-        if ((args.startsWith("\"") && args.endsWith("\"")) || 
-            (args.startsWith("'") && args.endsWith("'"))) {
+        if ((args.startsWith("\"") && args.endsWith("\"")) ||
+                (args.startsWith("'") && args.endsWith("'"))) {
             args = args.substring(1, args.length() - 1);
         }
 
-        // 移除.jar 后缀（如果是文件名）
+        // 移除.jar 后缀（如果用户输入了）
         if (args.endsWith(".jar")) {
             args = args.substring(0, args.length() - 4);
         }
 
-        // TODO: 实现模组卸载逻辑
-        // 目前只是模拟
-        modLoader.getConsole().printSuccess("Unloading mod: " + args);
-        modLoader.getConsole().printSuccess("Mod unloaded successfully");
+        try {
+            // 卸载模组
+            modLoader.unloadMod(args);
+        } catch (Exception e) {
+            String errorMsg = "Failed to unload mod: " + e.getMessage();
+            modLoader.getConsole().printError(errorMsg);
+            // 通过广播域发送错误消息
+            modLoader.getBroadcastManager().broadcast("Hub.Console", "[ERROR] " + errorMsg, "UnloadCommand");
+        }
     }
 
     @Override
     public String getDescription() {
-        return "卸载模组（支持包名或文件名）";
+        return "卸载模组（通过模组名称）";
     }
 
     @Override
     public String getUsage() {
-        return "/unload [模组包名或文件名]";
+        return "/unload [模组名称]";
     }
 }

@@ -8,9 +8,13 @@ import net.lemoncookie.neko.modloader.ModLoader;
 public class ClearCommand implements Command {
 
     @Override
-    public void execute(ModLoader modLoader, String args) throws Exception {
-        modLoader.getConsole().clear();
-        modLoader.getConsole().printLine("Console cleared");
+    public void execute(ModLoader modLoader, String args) {
+        try {
+            modLoader.getConsole().clear();
+            modLoader.getConsole().printLine("Console cleared");
+        } catch (Exception e) {
+            modLoader.getConsole().printError("Failed to clear console: " + e.getMessage());
+        }
     }
 
     @Override

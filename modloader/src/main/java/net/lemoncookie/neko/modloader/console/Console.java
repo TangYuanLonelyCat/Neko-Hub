@@ -17,7 +17,7 @@ public class Console {
     private final ModLoader modLoader;
     private final BufferedReader reader;
     private final PrintStream out;
-    
+
     // ANSI 颜色代码
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_RED = "\u001B[31m";
@@ -35,7 +35,7 @@ public class Console {
         this.modLoader = modLoader;
         this.reader = new BufferedReader(new InputStreamReader(System.in));
         this.out = System.out;
-        
+
         // 设置控制台编码为 UTF-8 以支持中文
         try {
             System.setOut(new PrintStream(System.out, true, "UTF-8"));
@@ -146,13 +146,13 @@ public class Console {
                     // 显示提示符
                     String username = System.getProperty("user.name", "User");
                     print("[" + username + "]>");
-                    
+
                     // 读取用户输入
                     String input = reader.readLine();
                     if (input == null) {
                         break;
                     }
-                    
+
                     // 处理输入
                     handleInput(input.trim());
                 }
@@ -160,8 +160,8 @@ public class Console {
                 printLine("Console error: " + e.getMessage());
             }
         });
-        
-        consoleThread.setDaemon(true);
+
+        consoleThread.setName("Console-Input");
         consoleThread.start();
     }
 
@@ -172,7 +172,7 @@ public class Console {
         if (input.isEmpty()) {
             return;
         }
-        
+
         // 交给命令系统处理
         modLoader.getCommandSystem().executeCommand(input);
     }

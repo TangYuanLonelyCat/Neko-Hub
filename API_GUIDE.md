@@ -67,31 +67,31 @@ modloader/
 ```java
 // 控制台类
 public class Console {
-    // 构造函数
-    public Console(ModLoader modLoader)
-    
-    // 打印方法
-    public void printLine(String text)
-    public void printLine()
-    public void print(String text)
-    
-    // 彩色输出方法
-    public void printError(String text)    // 红色
-    public void printWarning(String text)  // 黄色
-    public void printSuccess(String text)  // 绿色
-    public void printInfo(String text)     // 蓝色
-    public void printCyan(String text)     // 青色
-    public void printMagenta(String text)  // 紫色
-    public void printWhite(String text)    // 白色
-    
-    // 交互式控制台
-    public void startInteractive()
-    
-    // 其他方法
-    public void clear()
-    public String readLine() throws IOException
-    public boolean readConfirmation() throws IOException
-    public void close()
+   // 构造函数
+   public Console(ModLoader modLoader)
+
+   // 打印方法
+   public void printLine(String text)
+   public void printLine()
+   public void print(String text)
+
+   // 彩色输出方法
+   public void printError(String text)    // 红色
+   public void printWarning(String text)  // 黄色
+   public void printSuccess(String text)  // 绿色
+   public void printInfo(String text)     // 蓝色
+   public void printCyan(String text)     // 青色
+   public void printMagenta(String text)  // 紫色
+   public void printWhite(String text)    // 白色
+
+   // 交互式控制台
+   public void startInteractive()
+
+   // 其他方法
+   public void clear()
+   public String readLine() throws IOException
+   public boolean readConfirmation() throws IOException
+   public void close()
 }
 ```
 
@@ -102,16 +102,16 @@ Boot 文件系统用于在启动时自动执行命令序列，支持自定义 bo
 ```java
 // Boot 文件管理器
 public class BootFileManager {
-    // 构造函数
-    public BootFileManager(ModLoader modLoader)
-    
-    // Boot 文件操作
-    public List<String> readBootFile(String fileName)
-    public boolean executeBootFile(String fileName)
-    public void generateAutoBoot()                    // 生成 auto.boot
-    public void setCurrentBootFile(String fileName)
-    public String getCurrentBootFile()
-    public boolean executeCurrentBootFile()
+   // 构造函数
+   public BootFileManager(ModLoader modLoader)
+
+   // Boot 文件操作
+   public List<String> readBootFile(String fileName)
+   public boolean executeBootFile(String fileName)
+   public void generateAutoBoot()                    // 生成 auto.boot
+   public void setCurrentBootFile(String fileName)
+   public String getCurrentBootFile()
+   public boolean executeCurrentBootFile()
 }
 ```
 
@@ -136,21 +136,21 @@ public class BootFileManager {
 ```java
 // 配置管理器
 public class ConfigManager {
-    // 构造函数
-    public ConfigManager(ModLoader modLoader)
-    
-    // 配置操作
-    public String getConfig(String key, String defaultValue)
-    public void setConfig(String key, String value)
-    
-    // Boot 文件配置
-    public String getBootFile()
-    public void setBootFile(String fileName)
-    
-    // 模组权限配置
-    public ModPermission getModPermission(String modId)
-    public void setModPermission(String modId, int level)
-    public Map<String, Integer> getAllModPermissions()
+   // 构造函数
+   public ConfigManager(ModLoader modLoader)
+
+   // 配置操作
+   public String getConfig(String key, String defaultValue)
+   public void setConfig(String key, String value)
+
+   // Boot 文件配置
+   public String getBootFile()
+   public void setBootFile(String fileName)
+
+   // 模组权限配置
+   public ModPermission getModPermission(String modId)
+   public void setModPermission(String modId, int level)
+   public Map<String, Integer> getAllModPermissions()
 }
 ```
 
@@ -161,19 +161,19 @@ public class ConfigManager {
 ```java
 // 控制台模组
 public class ConsoleMod implements IModAPI {
-    // 模组信息
-    public String getModId()         // 返回 "console-mod"
-    public String getVersion()       // 返回 "1.0.0"
-    public String getPackageName()   // 返回 "net.lemoncookie.neko.modloader.consolemod"
-    public String getName()          // 返回 "Console Mod"
-    
-    // 生命周期
-    public void onLoad(ModLoader modLoader)    // 创建 Hub.System 和 Hub.Console 域
-    public void onUnload()
-    
-    // 注册方法
-    public void registerCommands(ModLoader modLoader)
-    public void registerBroadcastListeners(ModLoader modLoader)
+   // 模组信息
+   public String getModId()         // 返回 "console-mod"
+   public String getVersion()       // 返回 "1.0.0"
+   public String getPackageName()   // 返回 "net.lemoncookie.neko.modloader.consolemod"
+   public String getName()          // 返回 "Console Mod"
+
+   // 生命周期
+   public void onLoad(ModLoader modLoader)    // 创建 Hub.System 和 Hub.Console 域
+   public void onUnload()
+
+   // 注册方法
+   public void registerCommands(ModLoader modLoader)
+   public void registerBroadcastListeners(ModLoader modLoader)
 }
 ```
 
@@ -184,31 +184,32 @@ public class ConsoleMod implements IModAPI {
 ```java
 // 命令系统
 public class CommandSystem {
-    // 构造函数
-    public CommandSystem(ModLoader modLoader)
-    
-    // 命令管理
-    public void registerCommand(String name, Command command)
-    public void executeCommand(String input)
-    public Map<String, Command> getCommands()
+   // 构造函数
+   public CommandSystem(ModLoader modLoader)
+
+   // 命令管理
+   public void registerCommand(String name, Command command)
+   public void executeCommand(String input)
+   public Map<String, Command> getCommands()
 }
 
 // 命令接口
 public interface Command {
-    void execute(ModLoader modLoader, String args) throws Exception;
-    String getDescription();
-    String getUsage();
+   void execute(ModLoader modLoader, String args) throws Exception;
+   String getDescription();
+   String getUsage();
 }
 ```
 
 **内置命令：**
 - `/help` - 显示可用命令
 - `/clear` - 清空控制台
-- `/load [模组包名或文件名]` - 加载模组（支持包名或文件名，不支持路径）
-- `/unload [模组包名或文件名]` - 卸载模组
+- `/load [模组文件名]` - 加载模组（通过文件名，会自动添加.jar 后缀）
+- `/unload [模组名称]` - 卸载模组（通过模组名称/ID）
 - `/set modPermission [模组名] [level 值]` - 设置模组权限（level 0-3）
 - `/set bootfile [文件名]` - 设置 boot 文件名
 - `/autoboot` - 扫描 mods 文件夹并生成 auto.boot 文件
+- `/exit` - 优雅地关闭 Neko-Hub
 
 #### 广播域系统 (`net.lemoncookie.neko.modloader.broadcast`)
 

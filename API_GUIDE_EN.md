@@ -67,31 +67,31 @@ The console system is responsible for displaying information and handling user i
 ```java
 // Console class
 public class Console {
-    // Constructor
-    public Console(ModLoader modLoader)
-    
-    // Print methods
-    public void printLine(String text)
-    public void printLine()
-    public void print(String text)
-    
-    // Colored output methods
-    public void printError(String text)    // Red
-    public void printWarning(String text)  // Yellow
-    public void printSuccess(String text)  // Green
-    public void printInfo(String text)     // Blue
-    public void printCyan(String text)     // Cyan
-    public void printMagenta(String text)  // Magenta
-    public void printWhite(String text)    // White
-    
-    // Interactive console
-    public void startInteractive()
-    
-    // Other methods
-    public void clear()
-    public String readLine() throws IOException
-    public boolean readConfirmation() throws IOException
-    public void close()
+   // Constructor
+   public Console(ModLoader modLoader)
+
+   // Print methods
+   public void printLine(String text)
+   public void printLine()
+   public void print(String text)
+
+   // Colored output methods
+   public void printError(String text)    // Red
+   public void printWarning(String text)  // Yellow
+   public void printSuccess(String text)  // Green
+   public void printInfo(String text)     // Blue
+   public void printCyan(String text)     // Cyan
+   public void printMagenta(String text)  // Magenta
+   public void printWhite(String text)    // White
+
+   // Interactive console
+   public void startInteractive()
+
+   // Other methods
+   public void clear()
+   public String readLine() throws IOException
+   public boolean readConfirmation() throws IOException
+   public void close()
 }
 ```
 
@@ -102,16 +102,16 @@ The boot file system is used to execute command sequences automatically at start
 ```java
 // Boot file manager
 public class BootFileManager {
-    // Constructor
-    public BootFileManager(ModLoader modLoader)
-    
-    // Boot file operations
-    public List<String> readBootFile(String fileName)
-    public boolean executeBootFile(String fileName)
-    public void generateAutoBoot()                    // Generate auto.boot
-    public void setCurrentBootFile(String fileName)
-    public String getCurrentBootFile()
-    public boolean executeCurrentBootFile()
+   // Constructor
+   public BootFileManager(ModLoader modLoader)
+
+   // Boot file operations
+   public List<String> readBootFile(String fileName)
+   public boolean executeBootFile(String fileName)
+   public void generateAutoBoot()                    // Generate auto.boot
+   public void setCurrentBootFile(String fileName)
+   public String getCurrentBootFile()
+   public boolean executeCurrentBootFile()
 }
 ```
 
@@ -136,21 +136,21 @@ The configuration management system is used for persistent storage of configurat
 ```java
 // Configuration manager
 public class ConfigManager {
-    // Constructor
-    public ConfigManager(ModLoader modLoader)
-    
-    // Configuration operations
-    public String getConfig(String key, String defaultValue)
-    public void setConfig(String key, String value)
-    
-    // Boot file configuration
-    public String getBootFile()
-    public void setBootFile(String fileName)
-    
-    // Mod permission configuration
-    public ModPermission getModPermission(String modId)
-    public void setModPermission(String modId, int level)
-    public Map<String, Integer> getAllModPermissions()
+   // Constructor
+   public ConfigManager(ModLoader modLoader)
+
+   // Configuration operations
+   public String getConfig(String key, String defaultValue)
+   public void setConfig(String key, String value)
+
+   // Boot file configuration
+   public String getBootFile()
+   public void setBootFile(String fileName)
+
+   // Mod permission configuration
+   public ModPermission getModPermission(String modId)
+   public void setModPermission(String modId, int level)
+   public Map<String, Integer> getAllModPermissions()
 }
 ```
 
@@ -161,19 +161,19 @@ The console mod is a system mod that loads first, responsible for creating syste
 ```java
 // Console mod
 public class ConsoleMod implements IModAPI {
-    // Mod info
-    public String getModId()         // Returns "console-mod"
-    public String getVersion()       // Returns "1.0.0"
-    public String getPackageName()   // Returns "net.lemoncookie.neko.modloader.consolemod"
-    public String getName()          // Returns "Console Mod"
-    
-    // Lifecycle
-    public void onLoad(ModLoader modLoader)    // Create Hub.System and Hub.Console domains
-    public void onUnload()
-    
-    // Registration methods
-    public void registerCommands(ModLoader modLoader)
-    public void registerBroadcastListeners(ModLoader modLoader)
+   // Mod info
+   public String getModId()         // Returns "console-mod"
+   public String getVersion()       // Returns "1.0.0"
+   public String getPackageName()   // Returns "net.lemoncookie.neko.modloader.consolemod"
+   public String getName()          // Returns "Console Mod"
+
+   // Lifecycle
+   public void onLoad(ModLoader modLoader)    // Create Hub.System and Hub.Console domains
+   public void onUnload()
+
+   // Registration methods
+   public void registerCommands(ModLoader modLoader)
+   public void registerBroadcastListeners(ModLoader modLoader)
 }
 ```
 
@@ -184,31 +184,32 @@ The command system is responsible for parsing and executing commands, supporting
 ```java
 // Command system
 public class CommandSystem {
-    // Constructor
-    public CommandSystem(ModLoader modLoader)
-    
-    // Command management
-    public void registerCommand(String name, Command command)
-    public void executeCommand(String input)
-    public Map<String, Command> getCommands()
+   // Constructor
+   public CommandSystem(ModLoader modLoader)
+
+   // Command management
+   public void registerCommand(String name, Command command)
+   public void executeCommand(String input)
+   public Map<String, Command> getCommands()
 }
 
 // Command interface
 public interface Command {
-    void execute(ModLoader modLoader, String args) throws Exception;
-    String getDescription();
-    String getUsage();
+   void execute(ModLoader modLoader, String args) throws Exception;
+   String getDescription();
+   String getUsage();
 }
 ```
 
 **Built-in Commands:**
 - `/help` - Display available commands
 - `/clear` - Clear console
-- `/load [mod package name or filename]` - Load mod (supports package name or filename, not path)
-- `/unload [mod package name or filename]` - Unload mod
+- `/load [mod filename]` - Load mod (by filename, will auto-add .jar extension)
+- `/unload [mod name]` - Unload mod (by mod name/ID)
 - `/set modPermission [mod name] [level value]` - Set mod permission (level 0-3)
 - `/set bootfile [filename]` - Set boot file name
 - `/autoboot` - Scan mods folder and generate auto.boot file
+- `/exit` - Gracefully shutdown Neko-Hub
 
 #### Broadcast Domain System (`net.lemoncookie.neko.modloader.broadcast`)
 
@@ -558,18 +559,18 @@ import net.lemoncookie.neko.modloader.ModLoader
 import net.lemoncookie.neko.modloader.lib.kotlinModLibrary
 
 class MyKotlinMod : ModAPI {
-   override val modId = "my-kotlin-mod"
-   override val version = "1.0.0"
-   override val packageName = "com.example.mykotlinmod"
-   override val name = "My Kotlin Mod"
+    override val modId = "my-kotlin-mod"
+    override val version = "1.0.0"
+    override val packageName = "com.example.mykotlinmod"
+    override val name = "My Kotlin Mod"
 
-   override fun onLoad(modLoader: ModLoader) {
-      modLoader.getConsole().printLine("Kotlin mod loaded!")
-   }
+    override fun onLoad(modLoader: ModLoader) {
+        modLoader.getConsole().printLine("Kotlin mod loaded!")
+    }
 
-   override fun onUnload() {
-      println("Kotlin mod unloaded!")
-   }
+    override fun onUnload() {
+        println("Kotlin mod unloaded!")
+    }
 }
 
 // Register mod
@@ -579,8 +580,8 @@ loader.registerKotlinMod(MyKotlinMod())
 
 // Use Kotlin library DSL
 val lib = kotlinModLibrary {
-   register("config") { loadConfig() }
-   register("database", Database())
+    register("config") { loadConfig() }
+    register("database", Database())
 }
 ```
 
