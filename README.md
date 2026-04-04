@@ -7,7 +7,7 @@
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-purple.svg)](https://kotlinlang.org/)
 [![Gradle](https://img.shields.io/badge/Gradle-8.7+-blue.svg)](https://gradle.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPLv3-green.svg)](LICENSE)
 
 </div>
 
