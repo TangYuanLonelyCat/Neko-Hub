@@ -375,20 +375,116 @@ public class PermissionManager {
 
 #### Java API (`net.lemoncookie.neko.modloader.api`)
 
+Java 模组需要实现 `IModAPI` 接口。建议使用 `ModAPI` 工具类来简化开发。
+
+**基础接口**：
 ```java
-// Java版模组API接口
 public interface IModAPI {
     String getModId();
     String getVersion();
     String getPackageName();
-    void onLoad(ModLoader modLoader);
+    void onLoad(ModLoader modLoader, String modId);
     void onUnload();
-    default String getName() { return getModId(); }
-    default void registerCommands(ModLoader modLoader) {}
-    default void registerBroadcastListeners(ModLoader modLoader) {}
+    default void registerCommands(ModLoader modLoader, String modId) {}
+    default void registerBroadcastListeners(ModLoader modLoader, String modId) {}
 }
+```
 
-// Java版库支持
+**重要变更（v1.1.0）**：
+- `registerCommands` 和 `registerBroadcastListeners` 方法现在接收 `modId` 参数（自动传入）
+- 命令注册需要使用：`modLoader.getCommandSystem().registerCommand("命令名", modId, command, allowOverride)`
+- 支持多模组注册同一命令，通过 `--模组名` 后缀指定执行来源
+
+**使用 ModAPI 工具类**：
+```java
+public class MyMod extends ModAPI implements IModAPI {
+    
+    public MyMod() {
+        super(null, null); // 会在 onLoad 中初始化
+    }
+    
+    @Override
+    public void onLoad(ModLoader modLoader, String modId) {
+        // 初始化 API 工具类
+        this.modLoader = modLoader;
+        this.modId = modId;
+        
+        // 注册命令（不允许覆盖系统命令）
+        registerCommand("hello", new Command() {
+            @Override
+            public void execute(ModLoader modLoader, String args) {
+                printSuccess("Hello from " + getModName() + "!");
+            }
+            
+            @Override
+            public String getDescription() {
+                return "Say hello";
+            }
+            
+            @Override
+            public String getUsage() {
+                return "/hello";
+            }
+        }, false);
+        
+        // 广播消息
+        broadcastConsole("Mod loaded successfully!");
+        broadcastLog("Initialization complete");
+        broadcastAll("Hello from all mods!");
+        
+        // 监听广播
+        listen("Hub.ALL", (domain, message, senderModId) -> {
+            printInfo("Received: " + message);
+        });
+        
+        // 创建私有域
+        createPrivateDomain("Hub." + getModId());
+    }
+    
+    @Override
+    public void onUnload() {
+        printWarning("Mod is unloading...");
+    }
+}
+```
+
+**ModAPI 工具类提供的方法**：
+
+```java
+// 命令注册
+public boolean registerCommand(String name, Command command, boolean allowOverride)
+public void registerCommand(String name, Command command)
+
+// 广播系统
+public void broadcast(String domain, String message)
+public void broadcastAll(String message)           // Hub.ALL
+public void broadcastConsole(String message)       // Hub.Console
+public void broadcastLog(String message)           // Hub.Log
+public void listen(String domain, MessageListener listener)
+
+// 域管理
+public int createDomain(String name, boolean isPrivate, boolean isPublic)
+public int createPrivateDomain(String name)
+public int createPublicDomain(String name)
+
+// 控制台输出
+public void print(String text)
+public void printError(String text)
+public void printWarning(String text)
+public void printSuccess(String text)
+public void printInfo(String text)
+
+// 快捷访问
+public String getModId()
+public String getModName()
+public ModLoader getModLoader()
+public BroadcastManager getBroadcastManager()
+public CommandSystem getCommandSystem()
+public Console getConsole()
+```
+
+**Java 版库支持**：
+```java
 public class ModLibrary {
     public void register(String name, Object component);
     public <T> T get(String name);

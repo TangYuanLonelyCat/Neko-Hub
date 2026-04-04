@@ -80,7 +80,9 @@ public class BroadcastDomain {
             try {
                 listener.onMessageReceived(name, message, senderModId);
             } catch (Throwable e) {
-                // 忽略监听器错误
+                // 记录监听器错误到日志
+                System.err.println("[" + name + "] Error in message listener: " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }

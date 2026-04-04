@@ -221,7 +221,11 @@ public class BootFileManager {
         Set<String> visited = new HashSet<>();
         Set<String> visiting = new HashSet<>(); // 正在访问的节点（用于检测循环依赖）
         
-        for (String modId : modInfoMap.keySet()) {
+        // 使用有序的键列表，确保遍历顺序稳定
+        List<String> sortedModIds = new ArrayList<>(modInfoMap.keySet());
+        java.util.Collections.sort(sortedModIds); // 按模组 ID 字母顺序排序，确保稳定性
+        
+        for (String modId : sortedModIds) {
             if (!visited.contains(modId)) {
                 visit(modId, modInfoMap, visited, visiting, result);
             }

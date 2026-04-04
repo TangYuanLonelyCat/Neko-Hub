@@ -89,9 +89,16 @@ public class ListenCommand implements Command {
             return;
         }
 
-        // 移除监听器（通过广播域管理器）
-        // 注意：BroadcastManager 需要添加移除监听器的方法
-        modLoader.getConsole().printSuccess("Stopped listening to domain: " + domainName);
+        // 从广播域管理器移除监听器
+        int result = modLoader.getBroadcastManager().unlisten(domainName, listener);
+        
+        if (result == BroadcastManager.ERROR_SUCCESS) {
+            modLoader.getConsole().printSuccess("Stopped listening to domain: " + domainName);
+        } else if (result == BroadcastManager.ERROR_DOMAIN_NOT_FOUND) {
+            modLoader.getConsole().printError("Domain not found: " + domainName);
+        } else {
+            modLoader.getConsole().printError("Failed to stop listening. Error code: " + result);
+        }
     }
 
     @Override

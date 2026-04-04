@@ -12,16 +12,15 @@ public class SetCommand implements Command {
     public void execute(ModLoader modLoader, String args) {
         if (args.isEmpty()) {
             modLoader.getConsole().printError(
-                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile|language] [参数]")
             );
             return;
         }
 
-        // 解析命令
         String[] parts = args.split("\\s+", 3);
         if (parts.length < 2) {
             modLoader.getConsole().printError(
-                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile] [参数]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set [modPermission|bootfile|language] [参数]")
             );
             return;
         }
@@ -35,9 +34,12 @@ public class SetCommand implements Command {
             case "bootfile":
                 setBootFile(modLoader, parts);
                 break;
+            case "language":
+                setLanguage(modLoader, parts);
+                break;
             default:
-                modLoader.getConsole().printError("Unknown set command: " + subCommand);
-                modLoader.getConsole().printError("Available: modPermission, bootfile");
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.unknown_subcommand", subCommand));
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.available", "modPermission, bootfile, language"));
         }
     }
 
@@ -54,7 +56,6 @@ public class SetCommand implements Command {
         }
 
         String modName = parts[1];
-        // 移除可能的引号
         if ((modName.startsWith("\"") && modName.endsWith("\"")) || 
             (modName.startsWith("'") && modName.endsWith("'"))) {
             modName = modName.substring(1, modName.length() - 1);
@@ -64,17 +65,16 @@ public class SetCommand implements Command {
         try {
             level = Integer.parseInt(parts[2]);
             if (level < 0 || level > 3) {
-                modLoader.getConsole().printError("Level must be between 0 and 3");
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.level_range"));
                 return;
             }
         } catch (NumberFormatException e) {
-            modLoader.getConsole().printError("Invalid level: " + parts[2]);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.invalid_level", parts[2]));
             return;
         }
 
-        // 设置权限
         modLoader.getConfigManager().setModPermission(modName, level);
-        modLoader.getConsole().printSuccess("Set permission for " + modName + " to level " + level);
+        modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.permission", modName, level));
     }
 
     /**
@@ -99,21 +99,48 @@ public class SetCommand implements Command {
         // 检查文件是否存在
         java.io.File bootFile = new java.io.File(fileName);
         if (!bootFile.exists()) {
-            modLoader.getConsole().printError("Boot file not found: " + fileName);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.boot_not_found", fileName));
             return;
         }
 
         modLoader.getConfigManager().setBootFile(fileName);
-        modLoader.getConsole().printSuccess("Set boot file to: " + fileName);
+        modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.bootfile", fileName));
+    }
+
+    /**
+     * 设置语言
+     * 语法：/set language [en/zh/其他语言文件名（不含后缀）]
+     */
+    private void setLanguage(ModLoader modLoader, String[] parts) {
+        if (parts.length < 2) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.error.args", "/set language [en/zh]")
+            );
+            return;
+        }
+
+        String lang = parts[1].toLowerCase();
+        try (java.io.InputStream is = modLoader.getLanguageManager().getClass().getResourceAsStream("/lang/" + lang + ".json")) {
+            if (is == null) {
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.language_not_found", lang));
+                return;
+            }
+        } catch (Exception e) {
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.language_not_found", lang));
+            return;
+        }
+
+        modLoader.getLanguageManager().loadLanguage(lang);
+        modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.language", lang));
     }
 
     @Override
     public String getDescription() {
-        return "设置配置（模组权限或 boot 文件）";
+        return "设置配置（模组权限、boot 文件或语言）";
     }
 
     @Override
     public String getUsage() {
-        return "/set [modPermission|bootfile] [参数]";
+        return "/set [modPermission|bootfile|language] [参数]";
     }
 }

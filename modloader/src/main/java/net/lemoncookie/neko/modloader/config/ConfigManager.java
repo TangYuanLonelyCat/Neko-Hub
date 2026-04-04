@@ -154,4 +154,26 @@ public class ConfigManager {
         }
         return permissions;
     }
+    
+    /**
+     * 关闭配置管理器，释放资源
+     * 应在程序退出时调用，确保 ScheduledExecutorService 正确关闭
+     */
+    public void shutdown() {
+        // 先保存待保存的配置
+        if (needsSave.compareAndSet(true, false)) {
+            saveConfig();
+        }
+        
+        // 关闭调度器
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 }

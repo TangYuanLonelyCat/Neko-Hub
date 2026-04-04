@@ -54,16 +54,16 @@ public class LoadCommand implements Command {
             
             // 确保文件在 mods 目录内
             if (!modFile.getCanonicalPath().startsWith(modsDir.getCanonicalPath() + File.separator)) {
-                modLoader.getConsole().printError("Invalid mod file path: " + fileName);
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.load.error.invalid_path", fileName));
                 return;
             }
         } catch (IOException e) {
-            modLoader.getConsole().printError("Invalid mod file path: " + fileName);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.load.error.invalid_path", fileName));
             return;
         }
         
         if (!modFile.exists()) {
-            modLoader.getConsole().printError("Mod file not found: " + fileName);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.load.error.not_found", fileName));
             return;
         }
 
@@ -71,10 +71,10 @@ public class LoadCommand implements Command {
             // 从 JAR 文件加载模组
             loadModFromJar(modLoader, modFile);
         } catch (Exception e) {
-            String errorMsg = "Failed to load mod: " + e.getMessage();
+            String errorMsg = modLoader.getLanguageManager().getMessage("command.load.error.load_failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
             // 通过广播域发送错误消息
-            modLoader.getBroadcastManager().broadcast("Hub.Console", "[ERROR] " + errorMsg, "LoadCommand");
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "LoadCommand");
         }
     }
 
@@ -83,7 +83,7 @@ public class LoadCommand implements Command {
      */
     @SuppressWarnings("unchecked")
     private void loadModFromJar(ModLoader modLoader, File modFile) throws Exception {
-        String loadingMsg = "Loading mod from: " + modFile.getAbsolutePath();
+        String loadingMsg = modLoader.getLanguageManager().getMessage("command.load.info.loading", modFile.getAbsolutePath());
         modLoader.getConsole().printInfo(loadingMsg);
         modLoader.getBroadcastManager().broadcast("Hub.Log", "[INFO] " + loadingMsg, "LoadCommand");
 
@@ -127,7 +127,7 @@ public class LoadCommand implements Command {
                     // 检查模组 ID 是否重复
                     for (IModAPI loadedMod : modLoader.getJavaMods()) {
                         if (loadedMod.getModId().equals(modInstance.getModId())) {
-                            throw new Exception("Mod with ID '" + modInstance.getModId() + "' is already loaded");
+                            throw new Exception(modLoader.getLanguageManager().getMessage("command.load.error.duplicate_id", modInstance.getModId()));
                         }
                     }
 

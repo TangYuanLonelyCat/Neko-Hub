@@ -18,6 +18,12 @@ public class ExitCommand implements Command {
         // 卸载所有模组
         modLoader.unloadAll();
         
+        // 关闭日志系统
+        modLoader.getSimpleLogger().close();
+        
+        // 关闭配置管理器
+        modLoader.getConfigManager().shutdown();
+        
         // 关闭控制台
         modLoader.getConsole().close();
         

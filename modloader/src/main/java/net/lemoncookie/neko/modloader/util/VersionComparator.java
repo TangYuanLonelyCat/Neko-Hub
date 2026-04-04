@@ -60,4 +60,36 @@ public class VersionComparator {
     public static boolean isCompatible(String version, String minVersion) {
         return compare(version, minVersion) >= 0;
     }
+    
+    /**
+     * 检查版本是否在可接受范围内
+     * 允许一定程度的版本差距（主要用于 API 版本兼容性检查）
+     * 
+     * @param currentVersion 当前模组的 API 版本
+     * @param requiredMinVersion ModLoader 要求的最低 API 版本
+     * @return 返回兼容性级别：0=完全兼容，1=兼容但需要警告，2=不兼容
+     */
+    public static int checkCompatibilityLevel(String currentVersion, String requiredMinVersion) {
+        int comparison = compare(currentVersion, requiredMinVersion);
+        
+        if (comparison >= 0) {
+            return 0;
+        }
+        
+        String[] currentParts = currentVersion.replaceAll("^[vV]", "").trim().split("[.-]");
+        String[] requiredParts = requiredMinVersion.replaceAll("^[vV]", "").trim().split("[.-]");
+        
+        int currentMajor = (currentParts.length > 0) ? parseVersionPart(currentParts[0]) : 0;
+        int requiredMajor = (requiredParts.length > 0) ? parseVersionPart(requiredParts[0]) : 0;
+        
+        if (currentMajor == requiredMajor) {
+            return 1;
+        }
+        
+        if (currentMajor > 0 && currentMajor == requiredMajor - 1) {
+            return 1;
+        }
+        
+        return 2;
+    }
 }

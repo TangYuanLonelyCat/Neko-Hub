@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import net.lemoncookie.neko.modloader.api.ModAPI;
+import net.lemoncookie.neko.modloader.api.KModAPI;
 
 /**
  * ModLoader 主类 - Java 21 实现
@@ -28,13 +28,13 @@ import net.lemoncookie.neko.modloader.api.ModAPI;
 public class ModLoader {
 
     private static final String VERSION = "2.0.0";
-    private static final String MIN_API_VERSION = "1.0.0";
+    private static final String MIN_API_VERSION = "1.1.0";
     private static final String GITHUB_VERSION = "v1.0.0";
 
     private final ModCore core;
     private final ModLibrary javaLibrary;
     private final List<IModAPI> javaMods;
-    private final List<ModAPI> kotlinMods;
+    private final List<KModAPI> kotlinMods;
     private final Console console;
     private final CommandSystem commandSystem;
     private final BroadcastManager broadcastManager;
@@ -75,7 +75,7 @@ public class ModLoader {
         if (!modsDir.exists()) {
             boolean created = modsDir.mkdirs();
             if (!created) {
-                console.printWarning("Failed to create mods directory");
+                console.printWarning(languageManager.getMessage("modloader.error.create_mods_dir"));
             }
         }
     }
@@ -99,11 +99,11 @@ public class ModLoader {
         // 创建日志域（Hub.Log）并显示消息
         int logDomainResult = broadcastManager.addDomain("Hub.Log", false, true, "system");
         if (logDomainResult == BroadcastManager.ERROR_SUCCESS) {
-            console.printSuccess("Created Hub.Log domain");
+            console.printSuccess(languageManager.getMessage("modloader.success.create_log_domain"));
         } else if (logDomainResult == BroadcastManager.ERROR_DOMAIN_EXISTS) {
             // 域已存在，忽略
         } else {
-            console.printError("Failed to create Hub.Log domain: " + logDomainResult);
+            console.printError(languageManager.getMessage("modloader.error.create_log_domain", logDomainResult));
         }
 
         // 注册日志监听器（只监听 Hub.Log 域，避免重复显示）
@@ -128,7 +128,7 @@ public class ModLoader {
         console.printLine();
 
         // 初始化完成提示
-        console.printLine("ModLoader initialization completed. Starting interactive console...");
+        console.printLine(languageManager.getMessage("modloader.info.init_complete"));
 
         // 启动控制台交互
         console.startInteractive();
@@ -147,12 +147,12 @@ public class ModLoader {
         if (!bootFile.exists() || !bootFile.canRead()) {
             // 如果是默认 boot 文件不存在，自动创建
             if (isDefaultBootFile) {
-                console.printLine("Creating default auto.boot file...");
+                console.printLine(languageManager.getMessage("modloader.info.create_default_boot"));
                 bootFileManager.generateAutoBoot();
                 
                 // 重新检查文件是否创建成功
                 if (bootFile.exists() && bootFile.canRead()) {
-                    console.printLine("Loading boot file: " + bootFileName);
+                    console.printLine(languageManager.getMessage("modloader.info.loading_boot", bootFileName));
                     bootFileManager.executeBootFile(bootFileName);
                 } else {
                     console.printError(
@@ -166,7 +166,7 @@ public class ModLoader {
                 );
             }
         } else {
-            console.printLine("Loading boot file: " + bootFileName);
+            console.printLine(languageManager.getMessage("modloader.info.loading_boot", bootFileName));
             bootFileManager.executeBootFile(bootFileName);
         }
     }
@@ -184,20 +184,24 @@ public class ModLoader {
      * 注册 Java 模组
      */
     public void registerJavaMod(IModAPI mod) {
-        // 检查 API 版本
-        if (isApiVersionIncompatible(mod.getVersion())) {
+        int compatibilityLevel = checkApiVersionCompatibility(mod.getVersion());
+        
+        if (compatibilityLevel == 2) {
             console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
             return;
         }
+        
+        if (compatibilityLevel == 1) {
+            console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
+                mod.getName(), mod.getVersion(), MIN_API_VERSION));
+        }
 
-        // 检查依赖
         if (!checkDependencies(mod)) {
-            return; // 依赖不满足，拒绝加载
+            return;
         }
 
         javaMods.add(mod);
         
-        // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
         } catch (Throwable e) {
@@ -206,18 +210,16 @@ public class ModLoader {
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
         }
         
-        // 注册命令
         try {
-            mod.registerCommands(this);
+            mod.registerCommands(this, mod.getModId());
         } catch (Throwable e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
-        // 注册广播域监听器
         try {
-            mod.registerBroadcastListeners(this);
+            mod.registerBroadcastListeners(this, mod.getModId());
         } catch (Throwable e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
@@ -297,19 +299,11 @@ public class ModLoader {
 
     /**
      * 检查 API 版本兼容性
-     */
-    private boolean isApiVersionCompatible(String modApiVersion) {
-        // 使用语义化版本比较
-        return VersionComparator.isCompatible(modApiVersion, MIN_API_VERSION);
-    }
-
-    /**
-     * 检查 API 版本不兼容
      * @param modApiVersion 模组 API 版本
-     * @return 是否不兼容
+     * @return 兼容性级别：0=完全兼容，1=兼容但需要警告，2=不兼容
      */
-    private boolean isApiVersionIncompatible(String modApiVersion) {
-        return !isApiVersionCompatible(modApiVersion);
+    private int checkApiVersionCompatibility(String modApiVersion) {
+        return VersionComparator.checkCompatibilityLevel(modApiVersion, MIN_API_VERSION);
     }
 
     /**
@@ -329,15 +323,21 @@ public class ModLoader {
     /**
      * 注册 Kotlin 模组
      */
-    public void registerKotlinMod(ModAPI mod) {
-        if (isApiVersionIncompatible(mod.getInfo().getVersion())) {
+    public void registerKotlinMod(KModAPI mod) {
+        int compatibilityLevel = checkApiVersionCompatibility(mod.getInfo().getVersion());
+        
+        if (compatibilityLevel == 2) {
             console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
             return;
+        }
+        
+        if (compatibilityLevel == 1) {
+            console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
+                mod.getName(), mod.getInfo().getVersion(), MIN_API_VERSION));
         }
 
         kotlinMods.add(mod);
         
-        // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
         } catch (Throwable e) {
@@ -346,18 +346,16 @@ public class ModLoader {
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
         }
         
-        // 注册命令
         try {
-            mod.registerCommands(this);
+            mod.registerCommands(this, mod.getModId());
         } catch (Throwable e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
-        // 注册广播域监听器
         try {
-            mod.registerBroadcastListeners(this);
+            mod.registerBroadcastListeners(this, mod.getModId());
         } catch (Throwable e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
@@ -372,7 +370,7 @@ public class ModLoader {
     /**
      * 获取已加载的 Kotlin 模组列表
      */
-    public List<ModAPI> getKotlinMods() {
+    public List<KModAPI> getKotlinMods() {
         return new ArrayList<>(kotlinMods);
     }
 
@@ -382,7 +380,7 @@ public class ModLoader {
     public void unloadAll() {
         javaMods.forEach(IModAPI::onUnload);
         javaMods.clear();
-        kotlinMods.forEach(ModAPI::onUnload);
+        kotlinMods.forEach(KModAPI::onUnload);
         kotlinMods.clear();
         console.printLine(languageManager.getMessage("modloader.success.unloaded"));
     }
@@ -412,7 +410,7 @@ public class ModLoader {
         }
 
         // 尝试从 Kotlin 模组中查找并卸载
-        for (ModAPI kotlinMod : kotlinMods) {
+        for (KModAPI kotlinMod : kotlinMods) {
             if (kotlinMod.getModId().equals(modName) || kotlinMod.getName().equals(modName)) {
                 try {
                     kotlinMod.onUnload();

@@ -33,10 +33,10 @@ public class UnloadCommand implements Command {
             // 卸载模组
             modLoader.unloadMod(args);
         } catch (Throwable e) {
-            String errorMsg = "Failed to unload mod: " + e.getMessage();
+            String errorMsg = modLoader.getLanguageManager().getMessage("command.unload.error.failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
             // 通过广播域发送错误消息
-            modLoader.getBroadcastManager().broadcast("Hub.Console", "[ERROR] " + errorMsg, "UnloadCommand");
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "UnloadCommand");
         }
     }
 

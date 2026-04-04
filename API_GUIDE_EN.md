@@ -4,6 +4,31 @@
 
 Neko-Hub is a multi-functional project that currently supports CLI mode and will support GUI mode in the future. The project adopts a modular design, **based on Java 21**, for easy extension and maintenance.
 
+## Important Changes (v1.1.0)
+
+**API Updates:**
+- `registerCommands` and `registerBroadcastListeners` methods now receive a `modId` parameter (automatically passed)
+- Command registration now requires: `modLoader.getCommandSystem().registerCommand("commandName", modId, command, allowOverride)`
+- Multiple mods can register the same command, use `--modName` suffix to specify execution source
+- **Command Priority:** system implementation > specified mod > single implementation > error message
+- Added `ModAPI` utility class to simplify mod development (wraps common APIs)
+- Kotlin API renamed from `ModAPI` to `KModAPI` to avoid naming conflicts
+
+**Console and Logging:**
+- Console class print methods **NO LONGER auto-broadcast** messages
+- Separated display and logging concerns:
+  - Call `console.printXXX()` for colored display
+  - Broadcast to `Hub.Log` for logging (not displayed in console)
+- Inter-mod communication: broadcast to `Hub.Console`, displayed by ConsoleMod
+
+**Exception Handling:**
+- All `catch(Exception)` changed to `catch(Throwable)` for better stability
+- Ensures the loader won't crash from any errors
+
+**Command System:**
+- System commands use `allowOverride=false` to prevent being overridden
+- Support for `--system` and `--modname` parameters in `/help` command
+
 ## Technology Stack
 
 - **Java**: 21 (LTS)
@@ -64,9 +89,9 @@ modloader/
 
 The console system is responsible for displaying information and handling user input, supporting colored output.
 
-**Important Note**: Console's print methods **do NOT automatically broadcast** messages. If you need to both display and log messages:
-1. Call `console.printXXX()` methods to display (with colors)
-2. Manually call `broadcastManager.broadcast("Hub.Log", ...)` to log
+**Important Note (v1.1.0)**: Console's print methods **do NOT automatically broadcast** messages. This separation allows:
+- Display: Call `console.printXXX()` methods (with colors)
+- Logging: Manually broadcast to `Hub.Log` (not displayed in console)
 
 For inter-mod communication messages, broadcast to `Hub.Console`, which will be displayed uniformly by ConsoleMod (with colors and sender prefix).
 
@@ -106,13 +131,19 @@ public class Console {
 // Display only (with colors), no logging
 modLoader.getConsole().printSuccess("Operation successful");
 
-// Display and log
+// Display and log separately
 String msg = "Mod loaded successfully";
-modLoader.getConsole().printSuccess(msg);
-modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, "ModLoader");
+modLoader.getConsole().printSuccess(msg);  // Display with color
+modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, "ModLoader");  // Log only
 
 // Inter-mod communication (broadcast to Hub.Console, displayed by ConsoleMod)
 modLoader.getBroadcastManager().broadcast("Hub.Console", "Hello from my mod!", "MyMod");
+
+// Using ModAPI utility (v1.1.0 recommended)
+ModAPI api = new ModAPI(modLoader, getModId());
+api.printSuccess("My mod loaded!");        // Display
+api.broadcastLog("Initialization done");   // Log only
+api.broadcastConsole("Hello!");            // Display in console with sender prefix
 ```
 
 #### Boot File System (`net.lemoncookie.neko.modloader.boot`)
@@ -191,9 +222,9 @@ public class ConsoleMod implements IModAPI {
     public void onLoad(ModLoader modLoader)    // Create Hub.System and Hub.Console domains
     public void onUnload()
     
-    // Registration methods
-    public void registerCommands(ModLoader modLoader)
-    public void registerBroadcastListeners(ModLoader modLoader)
+    // Registration methods (v1.1.0: with modId parameter)
+    public void registerCommands(ModLoader modLoader, String modId)
+    public void registerBroadcastListeners(ModLoader modLoader, String modId)
 }
 ```
 
@@ -201,16 +232,21 @@ public class ConsoleMod implements IModAPI {
 
 The command system is responsible for parsing and executing commands, supporting built-in commands and custom commands.
 
+**v1.1.0 Updates:**
+- Supports multiple mods registering the same command
+- Use `--modName` suffix to specify which mod's command to execute
+- Command priority: system implementation > specified mod > single implementation
+
 ```java
 // Command system
 public class CommandSystem {
     // Constructor
     public CommandSystem(ModLoader modLoader)
     
-    // Command management
-    public void registerCommand(String name, Command command)
+    // Command management (v1.1.0: added modId and allowOverride parameters)
+    public boolean registerCommand(String name, String modId, Command command, boolean allowOverride)
     public void executeCommand(String input)
-    public Map<String, Command> getCommands()
+    public Map<String, Map<String, Command>> getCommands()  // name -> (modId -> Command)
 }
 
 // Command interface
@@ -238,13 +274,13 @@ public interface Command {
 
 **Mod Custom Commands:**
 
-Mods can register their own commands in the `registerCommands` method:
+Mods can register their own commands in the `registerCommands` method (v1.1.0 with modId parameter):
 
 ```java
-// Java mod example
+// Java mod example (v1.1.0)
 @Override
-public void registerCommands(ModLoader modLoader) {
-    modLoader.getCommandSystem().registerCommand("mycommand", new Command() {
+public void registerCommands(ModLoader modLoader, String modId) {
+    modLoader.getCommandSystem().registerCommand("mycommand", modId, new Command() {
         @Override
         public void execute(ModLoader modLoader, String args) {
             // Command execution logic
@@ -260,14 +296,14 @@ public void registerCommands(ModLoader modLoader) {
         public String getUsage() {
             return "/mycommand";
         }
-    });
+    }, false);  // allowOverride=false to prevent being overridden
 }
 ```
 
 ```kotlin
-// Kotlin mod example
-override fun registerCommands(modLoader: ModLoader) {
-    modLoader.commandSystem.registerCommand("mycommand", object : Command {
+// Kotlin mod example (v1.1.0)
+override fun registerCommands(modLoader: ModLoader, modId: String) {
+    modLoader.commandSystem.registerCommand("mycommand", modId, object : Command {
         override fun execute(modLoader: ModLoader, args: String) {
             // Command execution logic
             modLoader.console.printLine("Hello from my command!")
@@ -276,8 +312,17 @@ override fun registerCommands(modLoader: ModLoader) {
         override fun getDescription() = "My custom command"
         
         override fun getUsage() = "/mycommand"
-    })
+    }, false)  // allowOverride=false
 }
+```
+
+**Command Execution with Mod Specification:**
+```bash
+# Execute mymod's command
+/mycommand --mymod
+
+# Execute system command (if exists)
+/mycommand --system
 ```
 
 #### Broadcast Domain System (`net.lemoncookie.neko.modloader.broadcast`)
@@ -384,8 +429,8 @@ public interface IModAPI {
     void onLoad(ModLoader modLoader);
     void onUnload();
     default String getName() { return getModId(); }
-    default void registerCommands(ModLoader modLoader) {}
-    default void registerBroadcastListeners(ModLoader modLoader) {}
+    default void registerCommands(ModLoader modLoader, String modId) {}
+    default void registerBroadcastListeners(ModLoader modLoader, String modId) {}
 }
 
 // Java library support
@@ -394,6 +439,87 @@ public class ModLibrary {
     public <T> T get(String name);
     public boolean has(String name);
     public Set<String> getRegisteredNames();
+}
+```
+
+#### ModAPI Utility Class (`net.lemoncookie.neko.modloader.api`)
+
+The ModAPI utility class wraps common APIs to simplify mod development:
+
+```java
+public class ModAPI {
+    // Constructor
+    public ModAPI(ModLoader modLoader, String modId)
+    
+    // Command registration
+    public boolean registerCommand(String name, Command command, boolean allowOverride)
+    
+    // Broadcast system
+    public void broadcast(String domain, String message)
+    public void broadcastConsole(String message)      // Broadcast to Hub.Console
+    public void broadcastLog(String message)          // Broadcast to Hub.Log (logging only)
+    
+    // Domain management
+    public void createPrivateDomain()                 // Create private domain Hub.[modId]
+    
+    // Console output (display only, no auto-broadcast)
+    public void printError(String text)
+    public void printWarning(String text)
+    public void printSuccess(String text)
+    public void printInfo(String text)
+    public void printCyan(String text)
+    public void printMagenta(String text)
+    public void printWhite(String text)
+    public void printLine(String text)
+    public void printLine()
+    
+    // Quick access
+    public ModLoader getModLoader()
+    public String getModId()
+    public Console getConsole()
+    public CommandSystem getCommandSystem()
+    public BroadcastManager getBroadcastManager()
+}
+```
+
+**Usage Example:**
+```java
+import net.lemoncookie.neko.modloader.api.ModAPI;
+import net.lemoncookie.neko.modloader.api.IModAPI;
+import net.lemoncookie.neko.modloader.ModLoader;
+
+public class MyMod implements IModAPI {
+    private ModAPI api;
+    
+    @Override
+    public String getModId() { return "my-mod"; }
+    
+    @Override
+    public String getVersion() { return "1.0.0"; }
+    
+    @Override
+    public String getPackageName() { return "com.example.mymod"; }
+    
+    @Override
+    public void onLoad(ModLoader modLoader) {
+        // Initialize ModAPI utility
+        api = new ModAPI(modLoader, getModId());
+        
+        // Use wrapped APIs
+        api.printSuccess("My mod loaded!");
+        api.broadcastLog("[MyMod] Initialization complete");
+        api.broadcastConsole("Hello from MyMod!");
+        
+        // Register command
+        api.registerCommand("mycmd", (loader, args) -> {
+            api.printInfo("Command executed!");
+        }, false);
+    }
+    
+    @Override
+    public void onUnload() {
+        api.printWarning("My mod unloaded!");
+    }
 }
 ```
 
@@ -409,8 +535,8 @@ public class ModCore {
 #### Kotlin API (`net.lemoncookie.neko.modloader.api`)
 
 ```kotlin
-// Kotlin mod API interface
-interface ModAPI {
+// Kotlin mod API interface (renamed to KModAPI to avoid conflict with Java ModAPI utility)
+interface KModAPI {
     val modId: String
     val version: String
     val name: String
@@ -418,13 +544,15 @@ interface ModAPI {
     val packageName: String
     fun onLoad(modLoader: ModLoader)
     fun onUnload()
-    fun registerCommands(modLoader: ModLoader) {}
-    fun registerBroadcastListeners(modLoader: ModLoader) {}
+    fun registerCommands(modLoader: ModLoader, modId: String) {}
+    fun registerBroadcastListeners(modLoader: ModLoader, modId: String) {}
     fun getInfo(): ModInfo
 }
 
 data class ModInfo(val id: String, val name: String, val version: String)
 ```
+
+**Note:** Kotlin mods should use `KModAPI` interface instead of `ModAPI` to avoid naming conflicts with the Java `ModAPI` utility class.
 
 #### Kotlin Library Support (`net.lemoncookie.neko.modloader.lib`)
 
@@ -449,10 +577,10 @@ public class ModLoader {
     public ModLoader()
     public void initialize()
     public void registerJavaMod(IModAPI mod)
-    public void registerKotlinMod(ModAPI mod)
+    public void registerKotlinMod(KModAPI mod)  // v1.1.0: KModAPI
     public ModLibrary getJavaLibrary()
     public List<IModAPI> getJavaMods()
-    public List<ModAPI> getKotlinMods()
+    public List<KModAPI> getKotlinMods()  // v1.1.0: KModAPI
     public void unloadAll()
     public ModCore getCore()
     public Console getConsole()
@@ -462,7 +590,7 @@ public class ModLoader {
     public BootFileManager getBootFileManager()
     public ConfigManager getConfigManager()
     public static String getVersion()
-    public static String getMinApiVersion()
+    public static String getMinApiVersion()  // v1.1.0: "1.1.0"
     public static String getGithubVersion()
     public boolean isInitialized()
     public static void main(String[] args)
@@ -523,11 +651,12 @@ dependencies {
 1. **Initialization**: Create ModLoader instance and call initialize() method
 2. **Create mods folder**: Automatically create if not exists
 3. **Load console mod**: Load console mod first (default permission SUPER_ADMIN)
-4. **Load boot file**:
+4. **Create Hub.Log domain**: Create logging domain (v1.1.0+)
+5. **Load boot file**:
    - Load `auto.boot` file by default
    - Automatically create and execute if `auto.boot` doesn't exist
    - Show error but don't create if user-specified boot file doesn't exist
-5. **Start console interaction**: Start interactive console
+6. **Start console interaction**: Start interactive console
 
 ### Boot File System
 
@@ -573,14 +702,15 @@ The broadcast domain system allows communication between mods:
 - **Hub.ALL**: Public public domain, all mods (except level=3) can listen and send
 - **Hub.System**: Public private domain, requires permission level 1 or lower, and user confirmation to get permission
 - **Hub.Console**: Public public domain, created by console mod for inter-mod communication message display
-- **Hub.Log**: Public public domain, dedicated for logging system (not displayed in console)
+- **Hub.Log**: Public public domain, dedicated for logging system (not displayed in console, v1.1.0+)
 - **Private domain**: Format `Hub.[modId]`, only accessible by owner
 - **Public private domain**: Requires permission to listen and send
 
-**Best Practices for Message Sending:**
+**Best Practices for Message Sending (v1.1.0+):**
 - **Inter-mod communication**: Broadcast to `Hub.Console`, displayed uniformly by ConsoleMod (with colors and sender prefix)
 - **Logging**: Broadcast to `Hub.Log`, only recorded to log file, not displayed in console
-- **System messages**: Call `console.printXXX()` directly to display, and broadcast to `Hub.Log` to log
+- **System messages**: Call `console.printXXX()` directly to display (with colors), no auto-broadcast
+- **Recommended**: Use `ModAPI` utility class for simplified API access
 
 ### Language System Usage
 
@@ -592,6 +722,8 @@ The language system supports multiple languages:
 - **Message formatting**: Supports parameterized message formatting
 
 ## Java Mod Development Example
+
+### Basic Example (Traditional)
 
 ```java
 import net.lemoncookie.neko.modloader.api.IModAPI;
@@ -619,6 +751,14 @@ public class MyJavaMod implements IModAPI {
 
     @Override
     public String getName() { return "My Java Mod"; }
+    
+    // v1.1.0: with modId parameter
+    @Override
+    public void registerCommands(ModLoader modLoader, String modId) {
+        modLoader.getCommandSystem().registerCommand("mycmd", modId, (loader, args) -> {
+            loader.getConsole().printLine("Command executed!");
+        }, false);
+    }
 }
 
 // Register mod
@@ -627,14 +767,56 @@ loader.initialize();
 loader.registerJavaMod(new MyJavaMod());
 ```
 
+### Recommended (Using ModAPI Utility - v1.1.0+)
+
+```java
+import net.lemoncookie.neko.modloader.api.ModAPI;
+import net.lemoncookie.neko.modloader.api.IModAPI;
+import net.lemoncookie.neko.modloader.ModLoader;
+
+public class MyJavaMod implements IModAPI {
+    private ModAPI api;
+    
+    @Override
+    public String getModId() { return "my-java-mod"; }
+
+    @Override
+    public String getVersion() { return "1.0.0"; }
+
+    @Override
+    public String getPackageName() { return "com.example.myjavamod"; }
+
+    @Override
+    public void onLoad(ModLoader modLoader) {
+        // Initialize ModAPI utility
+        api = new ModAPI(modLoader, getModId());
+        
+        // Use wrapped APIs for easier development
+        api.printSuccess("Java mod loaded!");
+        api.broadcastLog("Initialization complete");
+        api.broadcastConsole("Hello from MyJavaMod!");
+        
+        // Register command with simplified API
+        api.registerCommand("mycmd", (loader, args) -> {
+            api.printInfo("Command executed!");
+        }, false);
+    }
+
+    @Override
+    public void onUnload() {
+        api.printWarning("Java mod unloaded!");
+    }
+}
+```
+
 ## Kotlin Mod Development Example
 
 ```kotlin
-import net.lemoncookie.neko.modloader.api.ModAPI
+import net.lemoncookie.neko.modloader.api.KModAPI  // Note: KModAPI, not ModAPI
 import net.lemoncookie.neko.modloader.ModLoader
 import net.lemoncookie.neko.modloader.lib.kotlinModLibrary
 
-class MyKotlinMod : ModAPI {
+class MyKotlinMod : KModAPI {
     override val modId = "my-kotlin-mod"
     override val version = "1.0.0"
     override val packageName = "com.example.mykotlinmod"
@@ -646,6 +828,17 @@ class MyKotlinMod : ModAPI {
 
     override fun onUnload() {
         println("Kotlin mod unloaded!")
+    }
+    
+    // v1.1.0: with modId parameter
+    override fun registerCommands(modLoader: ModLoader, modId: String) {
+        modLoader.commandSystem.registerCommand("mycmd", modId, object : Command {
+            override fun execute(modLoader: ModLoader, args: String) {
+                modLoader.console.printLine("Command executed!")
+            }
+            override fun getDescription() = "My command"
+            override fun getUsage() = "/mycmd"
+        }, false)
     }
 }
 

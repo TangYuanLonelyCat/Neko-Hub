@@ -22,7 +22,7 @@ public class TestModA implements IModAPI {
     
     @Override
     public String getVersion() {
-        return "1.0.0";
+        return "1.1.0";
     }
     
     @Override
@@ -54,14 +54,14 @@ public class TestModA implements IModAPI {
     }
     
     @Override
-    public void registerCommands(ModLoader modLoader) {
+    public void registerCommands(ModLoader modLoader, String modId) {
         // 注册 /test 命令
-        modLoader.getCommandSystem().registerCommand("test", new Command() {
+        modLoader.getCommandSystem().registerCommand("test", modId, new Command() {
             @Override
             public void execute(ModLoader modLoader, String args) {
                 // 第一步：返回 OK
                 modLoader.getConsole().printLine("OK");
-                modLoader.getBroadcastManager().broadcast("Hub.Log", "OK", "TestModA");
+                modLoader.getBroadcastManager().broadcast("Hub.Log", "OK", modId);
                 
                 // 第二步：尝试调用 TestModB 的函数
                 try {
@@ -71,14 +71,14 @@ public class TestModA implements IModAPI {
                         java.lang.reflect.Method method = testModB.getClass().getMethod("doComplete");
                         String result = (String) method.invoke(testModB);
                         modLoader.getConsole().printLine(result);
-                        modLoader.getBroadcastManager().broadcast("Hub.Log", result, "TestModA");
+                        modLoader.getBroadcastManager().broadcast("Hub.Log", result, modId);
                     } else {
                         modLoader.getConsole().printWarning("TestModB not found");
-                        modLoader.getBroadcastManager().broadcast("Hub.Log", "TestModB not found", "TestModA");
+                        modLoader.getBroadcastManager().broadcast("Hub.Log", "TestModB not found", modId);
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     modLoader.getConsole().printError("Error calling TestModB: " + e.getMessage());
-                    modLoader.getBroadcastManager().broadcast("Hub.Log", "Error calling TestModB: " + e.getMessage(), "TestModA");
+                    modLoader.getBroadcastManager().broadcast("Hub.Log", "Error calling TestModB: " + e.getMessage(), modId);
                 }
             }
             
@@ -91,7 +91,7 @@ public class TestModA implements IModAPI {
             public String getUsage() {
                 return "/test";
             }
-        });
+        }, false); // 不允许覆盖
     }
     
     /**

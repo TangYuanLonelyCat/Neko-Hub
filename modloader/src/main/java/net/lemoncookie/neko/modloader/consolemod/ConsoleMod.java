@@ -22,7 +22,7 @@ public class ConsoleMod implements IModAPI {
     
     @Override
     public String getVersion() {
-        return "1.0.0";
+        return "2.0.0";
     }
     
     @Override
@@ -39,34 +39,31 @@ public class ConsoleMod implements IModAPI {
     public void onLoad(ModLoader modLoader) {
         this.modLoader = modLoader;
         
-        // 设置权限为 SUPER_ADMIN
         modLoader.getBroadcastManager().getPermissionManager().setModPermission(getModId(), ModPermission.SUPER_ADMIN);
         
-        // 创建 Hub.System 域（公开私有域）
         int result = modLoader.getBroadcastManager().createSystemDomain(getModId());
         if (result == BroadcastManager.ERROR_SUCCESS) {
-            String msg = "Created Hub.System domain";
+            String msg = modLoader.getLanguageManager().getMessage("consolemod.success.create_system_domain");
             modLoader.getConsole().printSuccess(msg);
             modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
         } else {
-            String errorMsg = "Failed to create Hub.System domain: " + result;
-            modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
-        }
-        
-        // 创建 Hub.Console 域（公开公共域）
-        result = modLoader.getBroadcastManager().createConsoleDomain(getModId());
-        if (result == BroadcastManager.ERROR_SUCCESS) {
-            String msg = "Created Hub.Console domain";
-            modLoader.getConsole().printSuccess(msg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
-        } else {
-            String errorMsg = "Failed to create Hub.Console domain: " + result;
+            String errorMsg = modLoader.getLanguageManager().getMessage("consolemod.error.create_system_domain", result);
             modLoader.getConsole().printError(errorMsg);
             modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
         }
         
         // 监听 Hub.Console 域，显示接收到的消息（带颜色）
+        result = modLoader.getBroadcastManager().createConsoleDomain(getModId());
+        if (result == BroadcastManager.ERROR_SUCCESS) {
+            String msg = modLoader.getLanguageManager().getMessage("consolemod.success.create_console_domain");
+            modLoader.getConsole().printSuccess(msg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
+        } else {
+            String errorMsg = modLoader.getLanguageManager().getMessage("consolemod.error.create_console_domain", result);
+            modLoader.getConsole().printError(errorMsg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
+        }
+        
         modLoader.getBroadcastManager().listen(BroadcastManager.HUB_CONSOLE, new MessageListener() {
             @Override
             public void onMessageReceived(String domain, String message, String senderModId) {
@@ -106,12 +103,14 @@ public class ConsoleMod implements IModAPI {
     }
     
     @Override
-    public void registerCommands(ModLoader modLoader) {
+    public void registerCommands(ModLoader modLoader, String modId) {
         // 控制台模组不需要注册命令
+        // modId 参数未使用，但必须实现接口
     }
     
     @Override
-    public void registerBroadcastListeners(ModLoader modLoader) {
+    public void registerBroadcastListeners(ModLoader modLoader, String modId) {
         // 已经在 onLoad 中注册
+        // modId 参数未使用，但必须实现接口
     }
 }

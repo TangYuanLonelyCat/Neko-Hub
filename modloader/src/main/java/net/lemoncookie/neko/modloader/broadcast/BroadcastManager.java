@@ -315,4 +315,21 @@ public class BroadcastManager {
     public int createConsoleDomain(String ownerModId) {
         return addDomain("Hub.Console", false, true, ownerModId);
     }
+    
+    /**
+     * 移除监听器
+     * 
+     * @param domainName 域名
+     * @param listener 监听器
+     * @return 错误码（0 表示成功）
+     */
+    public int unlisten(String domainName, MessageListener listener) {
+        BroadcastDomain domain = domains.get(domainName);
+        if (domain == null) {
+            return ERROR_DOMAIN_NOT_FOUND;
+        }
+        
+        domain.removeListener(listener);
+        return ERROR_SUCCESS;
+    }
 }
