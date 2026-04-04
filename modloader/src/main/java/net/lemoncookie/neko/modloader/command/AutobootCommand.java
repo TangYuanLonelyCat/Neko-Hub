@@ -13,7 +13,7 @@ public class AutobootCommand implements Command {
         try {
             // 生成 auto.boot 文件
             modLoader.getBootFileManager().generateAutoBoot();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
         }
     }

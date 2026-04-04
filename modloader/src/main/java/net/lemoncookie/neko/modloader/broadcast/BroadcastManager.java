@@ -181,7 +181,7 @@ public class BroadcastManager {
                 if (!confirmed) {
                     return ERROR_PERMISSION_DENIED;
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 return ERROR_PERMISSION_DENIED;
             }
         }
@@ -212,7 +212,7 @@ public class BroadcastManager {
             if (!confirmed) {
                 return ERROR_PERMISSION_DENIED;
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return ERROR_PERMISSION_DENIED;
         }
         

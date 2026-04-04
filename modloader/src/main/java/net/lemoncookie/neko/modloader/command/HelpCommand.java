@@ -22,7 +22,7 @@ public class HelpCommand implements Command {
             
             modLoader.getConsole().printLine("Neko-Hub v." + ModLoader.getVersion() + " " + ModLoader.getGithubVersion());
             modLoader.getConsole().printLine("Type commands with '/' prefix");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             modLoader.getConsole().printError("Failed to show help: " + e.getMessage());
         }
     }

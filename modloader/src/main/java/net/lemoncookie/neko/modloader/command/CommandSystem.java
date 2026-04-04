@@ -69,7 +69,7 @@ public class CommandSystem {
             if (command != null) {
                 try {
                     command.execute(modLoader, args);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     modLoader.getConsole().printLine("Command error: " + e.getMessage());
                 }
             } else {

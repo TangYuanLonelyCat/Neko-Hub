@@ -45,7 +45,7 @@ public class SayCommand implements Command {
             } else {
                 modLoader.getConsole().printError("Failed to send message. Error code: " + result);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             modLoader.getConsole().printError("Failed to send message: " + e.getMessage());
         }
     }

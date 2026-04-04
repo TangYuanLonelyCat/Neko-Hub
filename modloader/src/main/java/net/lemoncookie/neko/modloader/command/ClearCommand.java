@@ -12,7 +12,7 @@ public class ClearCommand implements Command {
         try {
             modLoader.getConsole().clear();
             modLoader.getConsole().printLine("Console cleared");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             modLoader.getConsole().printError("Failed to clear console: " + e.getMessage());
         }
     }

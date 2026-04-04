@@ -133,7 +133,7 @@ public class LoadCommand implements Command {
 
                     // 注册模组
                     modLoader.registerJavaMod(modInstance);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     String warningMsg = "Error during mod loading: " + e.getMessage();
                     modLoader.getConsole().printWarning(warningMsg);
                     modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + warningMsg, "LoadCommand");

@@ -38,7 +38,7 @@ public class Console {
         // 设置控制台编码为 UTF-8 以支持中文
         try {
             System.setOut(new PrintStream(System.out, true, "UTF-8"));
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // 忽略编码设置错误
         }
     }
@@ -169,7 +169,7 @@ public class Console {
                 // Unix-like systems
                 new ProcessBuilder("clear").inheritIO().start().waitFor();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             modLoader.getConsole().printWarning("Clear screen failed: " + e.getMessage());
             // Fallback: print empty lines
             for (int i = 0; i < 50; i++) {

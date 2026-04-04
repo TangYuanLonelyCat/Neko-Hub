@@ -79,7 +79,7 @@ public class BroadcastDomain {
         for (MessageListener listener : listeners) {
             try {
                 listener.onMessageReceived(name, message, senderModId);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // 忽略监听器错误
             }
         }

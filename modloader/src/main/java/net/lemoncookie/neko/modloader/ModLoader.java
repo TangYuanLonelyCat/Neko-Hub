@@ -200,7 +200,7 @@ public class ModLoader {
         // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
@@ -209,7 +209,7 @@ public class ModLoader {
         // 注册命令
         try {
             mod.registerCommands(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
@@ -218,7 +218,7 @@ public class ModLoader {
         // 注册广播域监听器
         try {
             mod.registerBroadcastListeners(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
@@ -340,7 +340,7 @@ public class ModLoader {
         // 调用模组加载方法，捕获异常确保框架稳定
         try {
             mod.onLoad(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
@@ -349,7 +349,7 @@ public class ModLoader {
         // 注册命令
         try {
             mod.registerCommands(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
@@ -358,7 +358,7 @@ public class ModLoader {
         // 注册广播域监听器
         try {
             mod.registerBroadcastListeners(this);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
@@ -398,7 +398,7 @@ public class ModLoader {
             if (javaMod.getModId().equals(modName) || javaMod.getName().equals(modName)) {
                 try {
                     javaMod.onUnload();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
                     console.printError(errorMsg);
                     broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
@@ -416,7 +416,7 @@ public class ModLoader {
             if (kotlinMod.getModId().equals(modName) || kotlinMod.getName().equals(modName)) {
                 try {
                     kotlinMod.onUnload();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
                     console.printError(errorMsg);
                     broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
