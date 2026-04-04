@@ -4,11 +4,11 @@ import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.api.IModAPI;
 import net.lemoncookie.neko.modloader.api.ModDependency;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * 测试模组 B - 依赖 TestModA
+ * 测试模组 B - 被 TestModA 依赖的基础模组
  */
 public class TestModB implements IModAPI {
     
@@ -31,15 +31,15 @@ public class TestModB implements IModAPI {
     
     @Override
     public List<ModDependency> getDependencies() {
-        // 依赖 TestModA 1.0.0 或更高版本
-        return Arrays.asList(new ModDependency("TestModA", "1.0.0"));
+        // 无依赖
+        return Collections.emptyList();
     }
     
     @Override
     public void onLoad(ModLoader modLoader) {
         this.modLoader = modLoader;
-        modLoader.getConsole().printSuccess("[TestModB] Loaded successfully! (Depends on TestModA)");
-        modLoader.getBroadcastManager().broadcast("Hub.Console", "[TestModB] Hello from TestModB! I depend on TestModA.", "TestModB");
+        modLoader.getBroadcastManager().broadcast("Hub.Console", "Loaded successfully!", "TestModB");
+        modLoader.getBroadcastManager().broadcast("Hub.Console", "Hello from TestModB!", "TestModB");
     }
     
     @Override

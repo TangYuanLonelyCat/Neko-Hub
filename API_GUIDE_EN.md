@@ -62,7 +62,13 @@ modloader/
 
 #### Console System (`net.lemoncookie.neko.modloader.console`)
 
-The console system is responsible for displaying information and handling user input, supporting colored output and broadcast domain message display.
+The console system is responsible for displaying information and handling user input, supporting colored output.
+
+**Important Note**: Console's print methods **do NOT automatically broadcast** messages. If you need to both display and log messages:
+1. Call `console.printXXX()` methods to display (with colors)
+2. Manually call `broadcastManager.broadcast("Hub.Log", ...)` to log
+
+For inter-mod communication messages, broadcast to `Hub.Console`, which will be displayed uniformly by ConsoleMod (with colors and sender prefix).
 
 ```java
 // Console class
@@ -75,7 +81,7 @@ public class Console {
     public void printLine()
     public void print(String text)
     
-    // Colored output methods
+    // Colored output methods (no auto-broadcast)
     public void printError(String text)    // Red
     public void printWarning(String text)  // Yellow
     public void printSuccess(String text)  // Green
@@ -93,6 +99,20 @@ public class Console {
     public boolean readConfirmation() throws IOException
     public void close()
 }
+```
+
+**Usage Examples:**
+```java
+// Display only (with colors), no logging
+modLoader.getConsole().printSuccess("Operation successful");
+
+// Display and log
+String msg = "Mod loaded successfully";
+modLoader.getConsole().printSuccess(msg);
+modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, "ModLoader");
+
+// Inter-mod communication (broadcast to Hub.Console, displayed by ConsoleMod)
+modLoader.getBroadcastManager().broadcast("Hub.Console", "Hello from my mod!", "MyMod");
 ```
 
 #### Boot File System (`net.lemoncookie.neko.modloader.boot`)
@@ -282,6 +302,7 @@ public class BroadcastManager {
     public static final String HUB_ALL = "Hub.ALL";         // Public public domain
     public static final String HUB_SYSTEM = "Hub.System";   // Public private domain
     public static final String HUB_CONSOLE = "Hub.Console"; // Public public domain (console)
+    public static final String HUB_LOG = "Hub.Log";         // Public public domain (logging)
     
     // Error codes
     public static final int ERROR_SUCCESS = 0;              // Success
@@ -551,9 +572,15 @@ The broadcast domain system allows communication between mods:
 
 - **Hub.ALL**: Public public domain, all mods (except level=3) can listen and send
 - **Hub.System**: Public private domain, requires permission level 1 or lower, and user confirmation to get permission
-- **Hub.Console**: Public public domain, created by console mod for displaying messages
+- **Hub.Console**: Public public domain, created by console mod for inter-mod communication message display
+- **Hub.Log**: Public public domain, dedicated for logging system (not displayed in console)
 - **Private domain**: Format `Hub.[modId]`, only accessible by owner
 - **Public private domain**: Requires permission to listen and send
+
+**Best Practices for Message Sending:**
+- **Inter-mod communication**: Broadcast to `Hub.Console`, displayed uniformly by ConsoleMod (with colors and sender prefix)
+- **Logging**: Broadcast to `Hub.Log`, only recorded to log file, not displayed in console
+- **System messages**: Call `console.printXXX()` directly to display, and broadcast to `Hub.Log` to log
 
 ### Language System Usage
 

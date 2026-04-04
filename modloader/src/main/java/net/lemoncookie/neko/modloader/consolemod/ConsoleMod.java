@@ -45,20 +45,28 @@ public class ConsoleMod implements IModAPI {
         // 创建 Hub.System 域（公开私有域）
         int result = modLoader.getBroadcastManager().createSystemDomain(getModId());
         if (result == BroadcastManager.ERROR_SUCCESS) {
-            modLoader.getConsole().printSuccess("Created Hub.System domain");
+            String msg = "Created Hub.System domain";
+            modLoader.getConsole().printSuccess(msg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
         } else {
-            modLoader.getConsole().printError("Failed to create Hub.System domain: " + result);
+            String errorMsg = "Failed to create Hub.System domain: " + result;
+            modLoader.getConsole().printError(errorMsg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
         }
         
         // 创建 Hub.Console 域（公开公共域）
         result = modLoader.getBroadcastManager().createConsoleDomain(getModId());
         if (result == BroadcastManager.ERROR_SUCCESS) {
-            modLoader.getConsole().printSuccess("Created Hub.Console domain");
+            String msg = "Created Hub.Console domain";
+            modLoader.getConsole().printSuccess(msg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
         } else {
-            modLoader.getConsole().printError("Failed to create Hub.Console domain: " + result);
+            String errorMsg = "Failed to create Hub.Console domain: " + result;
+            modLoader.getConsole().printError(errorMsg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
         }
         
-        // 监听 Hub.Console 域，显示接收到的消息
+        // 监听 Hub.Console 域，显示接收到的消息（带颜色）
         modLoader.getBroadcastManager().listen(BroadcastManager.HUB_CONSOLE, new MessageListener() {
             @Override
             public void onMessageReceived(String domain, String message, String senderModId) {
@@ -80,7 +88,16 @@ public class ConsoleMod implements IModAPI {
             source = senderModId;
         }
         
-        modLoader.getConsole().printLine("[" + source + "] " + message);
+        // 根据消息类型选择颜色
+        if (message.startsWith("[ERROR]")) {
+            modLoader.getConsole().printError("[" + source + "] " + message);
+        } else if (message.startsWith("[WARNING]") || message.startsWith("[WARN]")) {
+            modLoader.getConsole().printWarning("[" + source + "] " + message);
+        } else if (message.startsWith("[INFO]") || message.startsWith("[SUCCESS]")) {
+            modLoader.getConsole().printSuccess("[" + source + "] " + message);
+        } else {
+            modLoader.getConsole().printLine("[" + source + "] " + message);
+        }
     }
     
     @Override

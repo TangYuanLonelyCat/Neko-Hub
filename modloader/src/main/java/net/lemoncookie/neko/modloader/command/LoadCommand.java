@@ -83,7 +83,9 @@ public class LoadCommand implements Command {
      */
     @SuppressWarnings("unchecked")
     private void loadModFromJar(ModLoader modLoader, File modFile) throws Exception {
-        modLoader.getConsole().printInfo("Loading mod from: " + modFile.getAbsolutePath());
+        String loadingMsg = "Loading mod from: " + modFile.getAbsolutePath();
+        modLoader.getConsole().printInfo(loadingMsg);
+        modLoader.getBroadcastManager().broadcast("Hub.Log", "[INFO] " + loadingMsg, "LoadCommand");
 
         IModAPI modInstance = null;
         
@@ -132,14 +134,16 @@ public class LoadCommand implements Command {
                     // 注册模组
                     modLoader.registerJavaMod(modInstance);
                 } catch (Exception e) {
-                    modLoader.getConsole().printWarning("Error during mod loading: " + e.getMessage());
+                    String warningMsg = "Error during mod loading: " + e.getMessage();
+                    modLoader.getConsole().printWarning(warningMsg);
+                    modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + warningMsg, "LoadCommand");
                     throw e;
                 }
             }
         }
         
         if (modInstance != null) {
-            modLoader.getConsole().printSuccess("Mod loaded successfully: " + modInstance.getName());
+            // 成功消息由 registerJavaMod 统一处理
         }
     }
 

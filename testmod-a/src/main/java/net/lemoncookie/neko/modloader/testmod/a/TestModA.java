@@ -32,15 +32,15 @@ public class TestModA implements IModAPI {
     
     @Override
     public List<ModDependency> getDependencies() {
-        // 无依赖
-        return Collections.emptyList();
+        // 依赖 TestModB 1.0.0 或更高版本
+        return Collections.singletonList(new ModDependency("TestModB", "1.0.0"));
     }
     
     @Override
     public void onLoad(ModLoader modLoader) {
         this.modLoader = modLoader;
-        modLoader.getConsole().printSuccess("[TestModA] Loaded successfully!");
-        modLoader.getBroadcastManager().broadcast("Hub.Console", "[TestModA] Hello from TestModA!", "TestModA");
+        modLoader.getBroadcastManager().broadcast("Hub.Console", "Loaded successfully!", "TestModA");
+        modLoader.getBroadcastManager().broadcast("Hub.Console", "Hello from TestModA!", "TestModA");
     }
     
     @Override
@@ -60,20 +60,36 @@ public class TestModA implements IModAPI {
             @Override
             public void execute(ModLoader modLoader, String args) {
                 // 第一步：返回 OK
-                modLoader.getConsole().printLine("[TestModA] OK");
+                modLoader.getConsole().printLine("OK");
+                modLoader.getBroadcastManager().broadcast("Hub.Log", "OK", "TestModA");
                 
                 // 第二步：尝试调用 TestModB 的函数
                 try {
-                    TestModB testModB = getTestModB(modLoader);
+                    Object testModB = getTestModB(modLoader);
                     if (testModB != null) {
-                        String result = testModB.doComplete();
-                        modLoader.getConsole().printLine("[TestModA] " + result);
+                        // 使用反射调用 doComplete 方法，避免编译时依赖
+                        java.lang.reflect.Method method = testModB.getClass().getMethod("doComplete");
+                        String result = (String) method.invoke(testModB);
+                        modLoader.getConsole().printLine(result);
+                        modLoader.getBroadcastManager().broadcast("Hub.Log", result, "TestModA");
                     } else {
-                        modLoader.getConsole().printWarning("[TestModA] TestModB not found");
+                        modLoader.getConsole().printWarning("TestModB not found");
+                        modLoader.getBroadcastManager().broadcast("Hub.Log", "TestModB not found", "TestModA");
                     }
                 } catch (Exception e) {
-                    modLoader.getConsole().printError("[TestModA] Error calling TestModB: " + e.getMessage());
+                    modLoader.getConsole().printError("Error calling TestModB: " + e.getMessage());
+                    modLoader.getBroadcastManager().broadcast("Hub.Log", "Error calling TestModB: " + e.getMessage(), "TestModA");
                 }
+            }
+            
+            @Override
+            public String getDescription() {
+                return "Test command for inter-mod communication";
+            }
+            
+            @Override
+            public String getUsage() {
+                return "/test";
             }
         });
     }
@@ -81,12 +97,12 @@ public class TestModA implements IModAPI {
     /**
      * 获取 TestModB 实例
      */
-    private TestModB getTestModB(ModLoader modLoader) {
+    private Object getTestModB(ModLoader modLoader) {
         // 通过反射或其他方式获取 TestModB 实例
         // 这里简化处理，假设 TestModB 已经注册到 ModLoader
         for (IModAPI mod : modLoader.getJavaMods()) {
-            if (mod.getModId().equals("TestModB") && mod instanceof TestModB) {
-                return (TestModB) mod;
+            if (mod.getModId().equals("TestModB")) {
+                return mod;
             }
         }
         return null;

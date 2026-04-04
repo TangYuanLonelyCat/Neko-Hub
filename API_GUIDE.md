@@ -62,7 +62,13 @@ modloader/
 
 #### 控制台系统 (`net.lemoncookie.neko.modloader.console`)
 
-控制台系统负责显示信息和处理用户输入，支持彩色输出和广播域消息显示。
+控制台系统负责显示信息和处理用户输入，支持彩色输出。
+
+**重要说明**：Console 类的打印方法**不会自动广播**消息。如果需要同时记录日志和显示消息，应该：
+1. 调用 `console.printXXX()` 方法显示（带颜色）
+2. 手动调用 `broadcastManager.broadcast("Hub.Log", ...)` 记录日志
+
+对于模组间通信消息，应广播到 `Hub.Console`，由 ConsoleMod 统一显示（带颜色和发送者前缀）。
 
 ```java
 // 控制台类
@@ -75,7 +81,7 @@ public class Console {
     public void printLine()
     public void print(String text)
     
-    // 彩色输出方法
+    // 彩色输出方法（不自动广播）
     public void printError(String text)    // 红色
     public void printWarning(String text)  // 黄色
     public void printSuccess(String text)  // 绿色
@@ -93,6 +99,20 @@ public class Console {
     public boolean readConfirmation() throws IOException
     public void close()
 }
+```
+
+**使用示例**：
+```java
+// 仅显示（带颜色），不记录日志
+modLoader.getConsole().printSuccess("操作成功");
+
+// 显示并记录日志
+String msg = "模组加载成功";
+modLoader.getConsole().printSuccess(msg);
+modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, "ModLoader");
+
+// 模组间通信（广播到 Hub.Console，由 ConsoleMod 统一显示）
+modLoader.getBroadcastManager().broadcast("Hub.Console", "Hello from my mod!", "MyMod");
 ```
 
 #### Boot 文件系统 (`net.lemoncookie.neko.modloader.boot`)
@@ -282,6 +302,7 @@ public class BroadcastManager {
     public static final String HUB_ALL = "Hub.ALL";         // 公开公共域
     public static final String HUB_SYSTEM = "Hub.System";   // 公开私有域
     public static final String HUB_CONSOLE = "Hub.Console"; // 公开公共域（控制台）
+    public static final String HUB_LOG = "Hub.Log";         // 公开公共域（日志专用）
     
     // 错误码
     public static final int ERROR_SUCCESS = 0;              // 操作成功
@@ -551,9 +572,15 @@ Neko-Hub 支持 CLI 模式，通过控制台与用户交互。控制台系统支
 
 - **Hub.ALL**：公开公共域，所有模组（除 level=3 外）都可以监听和发送
 - **Hub.System**：公开私有域，需要权限等级 1 或更低，并且需要用户确认获取权限
-- **Hub.Console**：公开公共域，控制台模组创建，用于显示消息
+- **Hub.Console**：公开公共域，控制台模组创建，用于模组间通信消息显示
+- **Hub.Log**：公开公共域，日志系统专用，用于记录日志（不显示在控制台）
 - **私有域**：格式为 `Hub.[modId]`，只能由所有者访问
 - **公开私有域**：需要获取权限才能监听和发送
+
+**消息发送最佳实践**：
+- **模组间通信**：广播到 `Hub.Console`，由 ConsoleMod 统一显示（带颜色和发送者前缀）
+- **日志记录**：广播到 `Hub.Log`，仅记录到日志文件，不显示在控制台
+- **系统消息**：直接调用 `console.printXXX()` 显示，同时广播到 `Hub.Log` 记录日志
 
 #### 语言系统使用
 

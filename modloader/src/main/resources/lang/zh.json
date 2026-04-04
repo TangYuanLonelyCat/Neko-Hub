@@ -1,5 +1,5 @@
 {
-  "modloader.version": "Neko-Hub v.%s %s",
+  "modloader.version": "Neko-Hub v.%s",
   "modloader.min_api": "Neko-API 最低版本 v.%s",
   "modloader.loading": "正在检测和加载模组...",
   "modloader.loaded": "共注册 %d 个模组，耗时 %s 秒。",

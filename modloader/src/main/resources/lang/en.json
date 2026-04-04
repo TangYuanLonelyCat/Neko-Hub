@@ -1,5 +1,5 @@
 {
-  "modloader.version": "Neko-Hub v.%s %s",
+  "modloader.version": "Neko-Hub v.%s",
   "modloader.min_api": "Neko-API MinVersion v.%s",
   "modloader.loading": "Detecting and loading mods...",
   "modloader.loaded": "A total of %d mods registered, took %s seconds.",

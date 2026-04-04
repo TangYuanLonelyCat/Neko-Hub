@@ -92,32 +92,40 @@ public class ModLoader {
         core.setModLoader(this);
         javaLibrary.setModLoader(this);
 
-        // 注册日志监听器（在加载控制台模组之前，确保所有消息都被记录）
-        broadcastManager.listen("Hub.ALL", simpleLogger, "System", "SimpleLogger");
-        broadcastManager.listen("Hub.System", simpleLogger, "System", "SimpleLogger");
-        broadcastManager.listen("Hub.Console", simpleLogger, "System", "SimpleLogger");
-
-        console.printLine(languageManager.getMessage("modloader.version", VERSION, GITHUB_VERSION));
+        console.printLine(languageManager.getMessage("modloader.version", VERSION));
         console.printLine(languageManager.getMessage("modloader.min_api", MIN_API_VERSION));
         console.printLine();
+
+        // 创建日志域（Hub.Log）并显示消息
+        int logDomainResult = broadcastManager.addDomain("Hub.Log", false, true, "system");
+        if (logDomainResult == BroadcastManager.ERROR_SUCCESS) {
+            console.printSuccess("Created Hub.Log domain");
+        } else if (logDomainResult == BroadcastManager.ERROR_DOMAIN_EXISTS) {
+            // 域已存在，忽略
+        } else {
+            console.printError("Failed to create Hub.Log domain: " + logDomainResult);
+        }
+
+        // 注册日志监听器（只监听 Hub.Log 域，避免重复显示）
+        broadcastManager.listen("Hub.Log", simpleLogger, "System", "SimpleLogger");
 
         long startTime = System.currentTimeMillis();
 
         // 加载控制台模组（优先加载）
         loadConsoleMod();
 
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
-
-        console.printLine(languageManager.getMessage("modloader.loaded", javaMods.size() + kotlinMods.size(), seconds));
-        console.printLine();
-
         core.start();
         initialized = true;
 
         // 加载 boot 文件
         loadBootFile();
+
+        // 显示模组加载统计信息（在 boot 文件加载完成后）
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(duration);
+        console.printLine(languageManager.getMessage("modloader.loaded", javaMods.size() + kotlinMods.size(), seconds));
+        console.printLine();
 
         // 初始化完成提示
         console.printLine("ModLoader initialization completed. Starting interactive console...");
@@ -195,7 +203,7 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
             console.printError(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
         }
         
         // 注册命令
@@ -204,7 +212,7 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
         // 注册广播域监听器
@@ -213,10 +221,12 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
-        console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getVersion()));
+        String successMsg = "Mod loaded successfully: " + mod.getName() + " v" + mod.getVersion();
+        console.printSuccess(successMsg);
+        broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
     }
 
     /**
@@ -248,7 +258,7 @@ public class ModLoader {
                     requiredVersion
                 );
                 console.printError(errorMsg);
-                broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
                 return false;
             }
             
@@ -262,7 +272,7 @@ public class ModLoader {
                     loadedMod.getVersion()
                 );
                 console.printError(errorMsg);
-                broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
                 return false;
             }
         }
@@ -333,7 +343,7 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
             console.printError(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
         }
         
         // 注册命令
@@ -342,7 +352,7 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
         // 注册广播域监听器
@@ -351,10 +361,12 @@ public class ModLoader {
         } catch (Exception e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
             console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Console", "[WARNING] " + errorMsg, "ModLoader");
+            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
-        console.printSuccess(languageManager.getMessage("modloader.success.loaded", mod.getName(), mod.getInfo().getVersion()));
+        String successMsg = "Mod loaded successfully: " + mod.getName() + " v" + mod.getInfo().getVersion();
+        console.printSuccess(successMsg);
+        broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
     }
 
     /**
@@ -389,10 +401,12 @@ public class ModLoader {
                 } catch (Exception e) {
                     String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
                     console.printError(errorMsg);
-                    broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
                 }
                 javaMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-                console.printSuccess("Mod unloaded successfully: " + modName);
+                String successMsg = "Mod unloaded successfully: " + modName;
+                console.printSuccess(successMsg);
+                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
                 return true;
             }
         }
@@ -405,15 +419,19 @@ public class ModLoader {
                 } catch (Exception e) {
                     String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
                     console.printError(errorMsg);
-                    broadcastManager.broadcast("Hub.Console", "[ERROR] " + errorMsg, "ModLoader");
+                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
                 }
                 kotlinMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-                console.printSuccess("Mod unloaded successfully: " + modName);
+                String successMsg = "Mod unloaded successfully: " + modName;
+                console.printSuccess(successMsg);
+                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
                 return true;
             }
         }
 
-        console.printError("Mod not found: " + modName);
+        String notFoundMsg = "Mod not found: " + modName;
+        console.printError(notFoundMsg);
+        broadcastManager.broadcast("Hub.Log", "[ERROR] " + notFoundMsg, "ModLoader");
         return false;
     }
 
