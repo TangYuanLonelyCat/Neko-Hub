@@ -130,7 +130,13 @@ public class SimpleLogger implements MessageListener {
         LocalDate storedDate = currentDate.get();
         
         if (storedDate == null || !storedDate.equals(today)) {
-            initLogFile();
+            synchronized (this) {
+                // Double-check after acquiring lock
+                storedDate = currentDate.get();
+                if (storedDate == null || !storedDate.equals(today)) {
+                    initLogFile();
+                }
+            }
         }
     }
     

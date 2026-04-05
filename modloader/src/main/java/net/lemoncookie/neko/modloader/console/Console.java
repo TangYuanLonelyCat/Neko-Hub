@@ -41,6 +41,15 @@ public class Console {
         } catch (Throwable e) {
             // 忽略编码设置错误
         }
+        
+        // 添加关闭钩子以确保 BufferedReader 在应用关闭时被正确关闭
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                // 忽略关闭错误
+            }
+        }));
     }
 
     /**

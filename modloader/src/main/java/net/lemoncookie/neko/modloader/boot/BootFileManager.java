@@ -46,10 +46,17 @@ public class BootFileManager {
             File projectRoot = new File(".").getCanonicalFile();
             bootFile = new File(fileName).getCanonicalFile();
             
-            // 确保 boot 文件在项目根目录内
+            // 确保 boot 文件在项目根目录内 - 使用 Path API 进行更严格的路径检查
             String bootFilePath = bootFile.getCanonicalPath();
             String projectRootPath = projectRoot.getCanonicalPath();
-            if (!bootFilePath.startsWith(projectRootPath + File.separator) && !bootFilePath.equals(projectRootPath)) {
+            
+            // 使用 Path API 进行规范化路径比较
+            java.nio.file.Path bootPath = java.nio.file.Paths.get(bootFilePath);
+            java.nio.file.Path rootPath = java.nio.file.Paths.get(projectRootPath);
+            java.nio.file.Path normalizedBoot = bootPath.normalize();
+            java.nio.file.Path normalizedRoot = rootPath.normalize();
+            
+            if (!normalizedBoot.startsWith(normalizedRoot)) {
                 modLoader.getConsole().printError("Invalid boot file path: " + fileName);
                 return null;
             }
