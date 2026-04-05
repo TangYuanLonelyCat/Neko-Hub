@@ -113,36 +113,64 @@ class Markdown : IModAPI {
             return htmlContent
         }
         
-        // 简单实现：提取 h1-h6 标签生成目录
+        // 提取 h1-h6 标签生成目录（带 ID 注入）
         val tocEntries = mutableListOf<Triple<Int, String, String>>()
         val headingRegex = Regex("<h([1-6])[^>]*>(.*?)</h[1-6]>")
+        
+        var modifiedContent = htmlContent
         
         for (match in headingRegex.findAll(htmlContent)) {
             val level = match.groupValues[1].toInt()
             val text = match.groupValues[2].replace(Regex("<[^>]*>"), "") // 移除 HTML 标签
-            val id = text.lowercase().replace(Regex("[^a-z0-9]"), "-")
+            val id = text.lowercase().replace(Regex("[^a-z0-9\\u4e00-\\u9fa5]"), "-").trim('-')
+            
+            // 如果原标签没有 id，添加 id
+            if (!match.groupValues[0].contains("id=")) {
+                val newTag = "<h$level id=\"$id\">${match.groupValues[2]}</h$level>"
+                modifiedContent = modifiedContent.replace(match.groupValues[0], newTag)
+            }
+            
             tocEntries.add(Triple(level, text, "#$id"))
         }
         
         if (tocEntries.isEmpty()) {
-            return htmlContent
+            return modifiedContent
         }
         
-        // 生成目录 HTML
+        // 生成目录 HTML（带层级结构）
         val tocHtml = buildString {
-            append("<div class=\"toc\">")
-            append("<h3>${modLoader?.languageManager?.getMessage("markdown.toc.title") ?: "Table of Contents"}</h3>")
-            append("<ul>")
+            append("<nav class=\"toc\" role=\"navigation\" aria-label=\"${modLoader?.languageManager?.getMessage("markdown.toc.title") ?: "Table of Contents"}\">")
+            append("<h3 class=\"toc-title\">${modLoader?.languageManager?.getMessage("markdown.toc.title") ?: "Table of Contents"}</h3>")
+            append("<ul class=\"toc-list\">")
             
+            var currentLevel = 0
             for ((level, text, href) in tocEntries) {
-                append("<li><a href=\"$href\">$text</a></li>")
+                when {
+                    level > currentLevel -> {
+                        repeat(level - currentLevel) {
+                            append("<ul class=\"toc-list\">")
+                        }
+                    }
+                    level < currentLevel -> {
+                        repeat(currentLevel - level) {
+                            append("</ul>")
+                        }
+                    }
+                }
+                append("<li class=\"toc-item\"><a href=\"$href\" class=\"toc-link\">$text</a></li>")
+                currentLevel = level
+            }
+            
+            // 关闭所有未闭合的 ul
+            repeat(currentLevel) {
+                append("</ul>")
             }
             
             append("</ul>")
-            append("</div>")
+            append("</nav>")
         }
         
-        return tocHtml + htmlContent
+        return tocHtml + modifiedContent
     }
     
     override fun getModId(): String {
