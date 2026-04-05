@@ -57,9 +57,9 @@ public class BroadcastManager {
             return ERROR_DOMAIN_EXISTS; // 广播域已存在
         }
         
-        // 检查权限
+        // 检查权限 - 只有 level 0 和 level 1 可以创建域
         ModPermission modPermission = permissionManager.getModPermission(ownerModId);
-        if (modPermission.getLevel() >= 3) {
+        if (modPermission.getLevel() > 1) {
             return ERROR_PERMISSION_DENIED; // 权限不足
         }
         
@@ -127,8 +127,8 @@ public class BroadcastManager {
             return ERROR_DOMAIN_NOT_FOUND;
         }
         
-        // 检查权限
-        if (!hasPermissionToAccessDomain(domainName, modId)) {
+        // 检查监听权限
+        if (!hasPermissionToListen(domainName, modId)) {
             return ERROR_PERMISSION_DENIED;
         }
         
@@ -230,6 +230,17 @@ public class BroadcastManager {
      * 4. 限权组件（level 3）：只能监听，不能发送
      */
     private boolean hasPermissionToAccessDomain(String domainName, String modId) {
+        return hasPermissionToSend(domainName, modId);
+    }
+    
+    /**
+     * 检查模组是否有权限发送消息到域
+     * 
+     * @param domainName 域名
+     * @param modId 模组 ID
+     * @return 是否有发送权限
+     */
+    public boolean hasPermissionToSend(String domainName, String modId) {
         BroadcastDomain domain = domains.get(domainName);
         if (domain == null) {
             return false;
@@ -243,9 +254,64 @@ public class BroadcastManager {
             return true;
         }
         
-        // 规则 4：限权组件只能监听，不能发送
+        // 规则 4：限权组件不能发送
         if (level == 3) {
             return false;
+        }
+        
+        // 检查是否是域所有者（所有者始终可以访问自己的域）
+        if (domain.getOwnerModId().equals(modId)) {
+            return true;
+        }
+        
+        // 规则 2：系统级组件可访问公共域和系统域
+        if (level == 1) {
+            // 系统域需要额外检查是否已授权
+            if (HUB_SYSTEM.equals(domainName)) {
+                Map<String, Boolean> permissions = domainPermissions.get(domainName);
+                return permissions != null && permissions.getOrDefault(modId, false);
+            }
+            // 公共域（包括公开公共域和普通公共域）
+            return !domain.isPrivate();
+        }
+        
+        // 规则 3：正常组件只能访问公共域
+        if (level == 2) {
+            // 只能访问公开公共域（Hub.ALL）
+            return !domain.isPrivate() && domain.isPublic();
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 检查模组是否有权限监听域
+     * 
+     * @param domainName 域名
+     * @param modId 模组 ID
+     * @return 是否有监听权限
+     */
+    public boolean hasPermissionToListen(String domainName, String modId) {
+        BroadcastDomain domain = domains.get(domainName);
+        if (domain == null) {
+            return false;
+        }
+        
+        ModPermission modPermission = permissionManager.getModPermission(modId);
+        int level = modPermission.getLevel();
+        
+        // 规则 1：超级管理员拥有所有权限
+        if (level == 0) {
+            return true;
+        }
+        
+        // 规则 4：限权组件可以监听（但不能发送）
+        if (level == 3) {
+            // Level 3 can listen to public domains and their own domains
+            if (domain.getOwnerModId().equals(modId)) {
+                return true;
+            }
+            return !domain.isPrivate() && domain.isPublic();
         }
         
         // 检查是否是域所有者（所有者始终可以访问自己的域）

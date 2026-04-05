@@ -29,19 +29,36 @@ public class LanguageManager {
      * 加载语言
      */
     public void loadLanguage(String lang) {
+        loadLanguage(lang, false);
+    }
+    
+    /**
+     * 加载语言（内部方法）
+     * @param lang 语言代码
+     * @param isDefaultAttempt 是否是默认语言尝试
+     */
+    private void loadLanguage(String lang, boolean isDefaultAttempt) {
         try (InputStream is = getClass().getResourceAsStream("/lang/" + lang + ".json")) {
             if (is != null) {
                 Map<String, String> langMessages = objectMapper.readValue(is, Map.class);
                 messages.clear();
                 messages.putAll(langMessages);
+            } else if (!isDefaultAttempt) {
+                // 语言文件不存在，尝试加载默认语言（仅一次）
+                loadLanguage(DEFAULT_LANG, true);
             } else {
-                // 语言文件不存在，加载默认语言
-                loadLanguage(DEFAULT_LANG);
+                // 即使是默认语言也失败了，使用空 map
+                messages.clear();
             }
         } catch (IOException e) {
             e.printStackTrace();
-            // 加载失败，使用默认语言
-            loadLanguage(DEFAULT_LANG);
+            if (!isDefaultAttempt) {
+                // 加载失败，尝试使用默认语言（仅一次）
+                loadLanguage(DEFAULT_LANG, true);
+            } else {
+                // 默认语言也失败了，使用空 map 作为最后手段
+                messages.clear();
+            }
         }
     }
 
