@@ -27,7 +27,7 @@ class MarkdownRenderer(private val markdown: Markdown, private val modLoader: Mo
         val htmlContent = if (initialMarkdown != null) {
             wrapHtml(markdown.parse(initialMarkdown))
         } else {
-            wrapHtml("<h1>Markdown Preview</h1><p>Select a file or enter markdown text to preview.</p>")
+            wrapHtml("<h1>${modLoader.languageManager.getMessage("markdown.ui.preview_title")}</h1><p>${modLoader.languageManager.getMessage("markdown.ui.preview_instruction")}</p>")
         }
         
         webView?.engine?.loadContent(htmlContent)
