@@ -1,6 +1,7 @@
 package net.lemoncookie.neko.modloader.command;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 import net.lemoncookie.neko.modloader.broadcast.MessageListener;
 
 import java.util.Map;
