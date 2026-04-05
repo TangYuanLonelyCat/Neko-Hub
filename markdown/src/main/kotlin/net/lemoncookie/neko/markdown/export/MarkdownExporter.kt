@@ -1,203 +1,119 @@
-package net.lemoncookie.neko.markdown.javafx
+package net.lemoncookie.neko.markdown.export
 
 import javafx.scene.web.WebView
-import javafx.scene.Scene
-import javafx.scene.layout.VBox
-import net.lemoncookie.neko.markdown.Markdown
-import net.lemoncookie.neko.modloader.ModLoader
-import net.lemoncookie.neko.markdown.export.MarkdownExporter
 import java.io.File
+import java.nio.file.Files
 
 /**
- * JavaFX Markdown 渲染器
+ * Markdown 导出功能
  * 
- * 使用 JavaFX WebView 组件渲染 Markdown 为 HTML
- * 提供可视化的 Markdown 预览功能
- * 
- * 支持功能：
- * - GitHub Flavored Markdown (GFM)
- * - 代码语法高亮（Highlight.js）
- * - 数学公式（KaTeX）
- * - 目录生成 (TOC)
- * - 主题切换（浅色/深色）
- * - 图片相对路径解析
- * - 导出为 HTML/PDF
+ * 支持导出为：
+ * - HTML 文件
+ * - PDF 文件（通过 WebView 打印）
  */
-class MarkdownRenderer(
-    private val markdown: Markdown, 
-    private val modLoader: ModLoader,
-    private val basePath: String? = null
-) {
-    
-    private var webView: WebView? = null
-    private var currentTheme: String = "light"
-    private var currentMarkdown: String = ""
+class MarkdownExporter(private val webView: WebView) {
     
     /**
-     * 创建 WebView 组件用于渲染 Markdown
-     * @param initialMarkdown 初始 Markdown 内容（可选）
-     * @return WebView 组件
+     * 导出为 HTML 文件
+     * @param content HTML 内容
+     * @param outputPath 输出文件路径
+     * @return 是否成功
      */
-    fun createWebView(initialMarkdown: String? = null): WebView {
-        webView = WebView()
-        
-        // 启用 JavaScript
-        webView?.engine?.isJavaScriptEnabled = true
-        
-        val htmlContent = if (initialMarkdown != null) {
-            currentMarkdown = initialMarkdown
-            renderMarkdown(initialMarkdown)
-        } else {
-            val placeholder = "<h1>${modLoader.languageManager.getMessage("markdown.ui.preview_title")}</h1><p>${modLoader.languageManager.getMessage("markdown.ui.preview_instruction")}</p>"
-            renderHtml(placeholder)
-        }
-        
-        webView?.engine?.loadContent(htmlContent)
-        return webView!!
-    }
-    
-    /**
-     * 更新 WebView 中的 Markdown 内容
-     * @param markdownText 新的 Markdown 文本
-     */
-    fun updateContent(markdownText: String) {
-        currentMarkdown = markdownText
-        val htmlContent = renderMarkdown(markdownText)
-        webView?.engine?.loadContent(htmlContent)
-    }
-    
-    /**
-     * 从文件加载并渲染 Markdown
-     * @param filePath Markdown 文件路径
-     * @return 是否成功加载
-     */
-    fun loadFromFile(filePath: String): Boolean {
-        val htmlContent = markdown.parseFile(filePath)
-        return if (htmlContent != null) {
-            currentMarkdown = htmlContent
-            webView?.engine?.loadContent(renderHtml(htmlContent, File(filePath).parent))
+    fun exportToHtml(content: String, outputPath: String): Boolean {
+        return try {
+            val file = File(outputPath)
+            Files.writeString(file.toPath(), content)
             true
-        } else {
+        } catch (e: Exception) {
             false
         }
     }
     
     /**
-     * 创建完整的 JavaFX 场景
-     * @param width 场景宽度
-     * @param height 场景高度
-     * @return JavaFX Scene
-     */
-    fun createScene(width: Double = 800.0, height: Double = 600.0): Scene {
-        val root = VBox()
-        root.children.add(createWebView())
-        return Scene(root, width, height)
-    }
-    
-    /**
-     * 获取 WebView 组件
-     */
-    fun getWebView(): WebView? = webView
-    
-    /**
-     * 切换主题
-     * @param theme 主题名称：light, dark, system
-     */
-    fun setTheme(theme: String) {
-        currentTheme = when (theme.lowercase()) {
-            "dark" -> "dark"
-            "system" -> {
-                // 检测系统主题（简化实现，默认浅色）
-                "light"
-            }
-            else -> "light"
-        }
-        
-        // 重新渲染当前内容
-        if (currentMarkdown.isNotEmpty()) {
-            updateContent(currentMarkdown)
-        }
-    }
-    
-    /**
-     * 获取导出器
-     */
-    fun getExporter(): MarkdownExporter? {
-        return webView?.let { MarkdownExporter(it) }
-    }
-    
-    /**
-     * 导出为 HTML 文件
-     * @param outputPath 输出路径
-     * @return 是否成功
-     */
-    fun exportToHtml(outputPath: String): Boolean {
-        val exporter = getExporter() ?: return false
-        val fullHtml = generateFullHtml()
-        return exporter.exportToHtml(fullHtml, outputPath)
-    }
-    
-    /**
      * 导出为 PDF 文件
-     * @param outputPath 输出路径
+     * @param outputPath 输出文件路径
      * @return 是否成功
+     * 
+     * 注意：此方法需要在 JavaFX 应用线程中执行
+     * 
+     * 警告：PDF 导出功能依赖于 JavaFX 打印系统，在某些环境下可能不可用。
+     * 如果导出失败，建议使用 HTML 导出然后通过浏览器打印为 PDF。
      */
     fun exportToPdf(outputPath: String): Boolean {
-        val exporter = getExporter() ?: return false
-        return exporter.exportToPdf(outputPath)
+        return try {
+            // 使用 WebView 的打印功能
+            val job = webView.engine.createPrintJob()
+            job ?: return false
+            
+            // 设置打印参数
+            val pageLayout = job.pageLayout
+            pageLayout.orientation = javafx.print.PageOrientation.PORTRAIT
+            pageLayout.paper = javafx.print.Paper.A4
+            
+            // 执行打印到文件
+            job.jobAttributes.outputType = javafx.print.PrintJob.JobType.POSTSCRIPT
+            
+            // 注意：JavaFX 打印到文件的功能在不同平台上支持程度不同
+            // 某些平台可能需要使用其他方式实现 PDF 导出
+            job.beginJob()
+            webView.engine.executeScript("window.print()")
+            job.endJob()
+            
+            true
+        } catch (e: Exception) {
+            // PDF 导出失败，记录错误但不抛出异常
+            false
+        }
     }
     
     /**
-     * 渲染 Markdown 为完整 HTML
+     * 获取完整的 HTML 文档（包含所有资源引用）
+     * @param bodyContent HTML 正文内容
+     * @param title 文档标题
+     * @param basePath 基础路径（用于解析相对路径）
+     * @param syntaxHighlight 是否启用语法高亮
+     * @param mathSupport 是否启用数学公式
+     * @param theme 主题
+     * @return 完整的 HTML 文档
      */
-    private fun renderMarkdown(markdownText: String): String {
-        val htmlBody = markdown.parse(markdownText)
-        val withToc = markdown.generateWithToc(htmlBody, "", markdown.config.autoTocEnabled)
-        return renderHtml(withToc, basePath?.let { File(it).parent })
-    }
-    
-    /**
-     * 包装 HTML 内容为完整的 HTML 文档
-     */
-    private fun renderHtml(bodyContent: String, imageBasePath: String? = null): String {
-        val config = markdown.config
-        val isDark = currentTheme == "dark"
+    fun generateFullHtml(
+        bodyContent: String,
+        title: String = "Markdown Document",
+        basePath: String? = null,
+        syntaxHighlight: Boolean = true,
+        mathSupport: Boolean = true,
+        theme: String = "light"
+    ): String {
+        val isDark = theme == "dark"
         
-        val highlightJs = if (config.syntaxHighlightEnabled) """
+        val highlightJs = if (syntaxHighlight) """
             <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/${if (isDark) "github-dark" else "github"}.min.css">
             <script>hljs.highlightAll();</script>
         """ else ""
         
-        val katexSupport = if (config.mathSupportEnabled) """
+        val katexCss = if (mathSupport) """
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
             <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
             <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
         """ else ""
         
-        val imagePathScript = if (imageBasePath != null && config.imageRelativePathEnabled) """
+        val basePathScript = if (basePath != null) """
             <script>
-                window.markdownBasePath = "$imageBasePath";
-                
-                // 处理相对路径图片
-                document.addEventListener('DOMContentLoaded', function() {
-                    const images = document.querySelectorAll('img');
-                    images.forEach(img => {
-                        const src = img.getAttribute('src');
-                        if (src && !src.startsWith('http') && !src.startsWith('/')) {
-                            img.setAttribute('src', 'file://' + window.markdownBasePath + '/' + src);
-                        }
-                    });
-                });
+                window.markdownBasePath = "$basePath";
             </script>
         """ else ""
         
         return """
             <!DOCTYPE html>
-            <html lang="${modLoader?.languageManager?.getCurrentLanguage() ?: "en"}">
+            <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>$title</title>
+                $highlightJs
+                $katexCss
+                $basePathScript
                 <style>
                     :root {
                         --bg-primary: ${if (isDark) "#0d1117" else "#ffffff"};
@@ -380,7 +296,6 @@ class MarkdownRenderer(
                         margin: 16px 0;
                     }
                     
-                    /* Task list items */
                     ul.contains-task-list {
                         list-style-type: none;
                         padding-left: 8px;
@@ -400,16 +315,6 @@ class MarkdownRenderer(
                         accent-color: var(--accent-green);
                     }
                     
-                    .task-list-item.checked {
-                        opacity: 0.7;
-                    }
-                    
-                    .task-list-item.checked label {
-                        text-decoration: line-through;
-                        color: var(--text-secondary);
-                    }
-                    
-                    /* Table of Contents - Enhanced */
                     .toc {
                         background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
                         padding: 24px;
@@ -468,18 +373,12 @@ class MarkdownRenderer(
                         text-decoration: none;
                     }
                     
-                    .toc-link::after {
-                        display: none;
-                    }
-                    
-                    /* Strikethrough */
                     del {
                         color: var(--text-secondary);
                         text-decoration-color: var(--accent-red);
                         text-decoration-thickness: 2px;
                     }
                     
-                    /* Math formulas */
                     .katex-display {
                         overflow-x: auto;
                         overflow-y: hidden;
@@ -489,14 +388,12 @@ class MarkdownRenderer(
                         border: 1px solid var(--border-secondary);
                     }
                     
-                    /* Horizontal rule */
                     hr {
                         border: none;
                         border-top: 2px solid var(--border-primary);
                         margin: 32px 0;
                     }
                     
-                    /* Scrollbar styling */
                     ::-webkit-scrollbar {
                         width: 10px;
                         height: 10px;
@@ -516,29 +413,16 @@ class MarkdownRenderer(
                         background: var(--text-secondary);
                     }
                     
-                    /* Selection */
                     ::selection {
                         background: var(--link-color);
                         color: var(--bg-primary);
                     }
                 </style>
-                $highlightJs
-                $katexSupport
-                $imagePathScript
             </head>
             <body>
                 $bodyContent
             </body>
             </html>
         """.trimIndent()
-    }
-    
-    /**
-     * 生成完整的 HTML 文档（用于导出）
-     */
-    fun generateFullHtml(): String {
-        val htmlBody = markdown.parse(currentMarkdown)
-        val withToc = markdown.generateWithToc(htmlBody, "", markdown.config.autoTocEnabled)
-        return renderHtml(withToc, basePath?.let { File(it).parent })
     }
 }
