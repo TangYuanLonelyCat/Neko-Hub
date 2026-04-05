@@ -7,5 +7,21 @@
   "markdown.error.file_not_found": "Markdown file not found: %s",
   "markdown.error.io_error": "IO error reading Markdown file: %s",
   "markdown.success.parsed": "Successfully parsed Markdown document",
-  "markdown.success.rendered": "Successfully rendered Markdown to HTML"
+  "markdown.success.rendered": "Successfully rendered Markdown to HTML",
+  "markdown.ui.preview_title": "Markdown Preview",
+  "markdown.ui.preview_instruction": "Select a file or enter markdown text to preview.",
+  "markdown.error.display": "Error parsing markdown",
+  "markdown.theme.light": "Light Theme",
+  "markdown.theme.dark": "Dark Theme",
+  "markdown.theme.system": "System Theme",
+  "markdown.toc.title": "Table of Contents",
+  "markdown.export.html": "Export as HTML",
+  "markdown.export.pdf": "Export as PDF",
+  "markdown.export.success": "Export successful: %s",
+  "markdown.export.failed": "Export failed: %s",
+  "markdown.config.title": "Markdown Settings",
+  "markdown.config.syntax_highlight": "Syntax Highlighting",
+  "markdown.config.math_support": "Math Formula Support",
+  "markdown.config.auto_toc": "Auto Generate TOC",
+  "markdown.config.image_relative_path": "Relative Image Path Resolution"
 }
