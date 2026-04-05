@@ -1,36 +1,45 @@
-```
-# Compiled and build artifacts
-*.class
-*.o
-*.obj
-*.out
+.gradle
 build/
-target/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Dependencies
-.gradle/
-libs/
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
 
-# Logs and temp files
-*.log
-*.tmp
+### Kotlin ###
+.kotlin
 
-# Editors
-.idea/
-*.swp
-*.swo
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
 
-# Environment
-.env
-.env.local
-*.env.*
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
+### VS Code ###
+.vscode/
 
-# OS
+### Mac OS ###
 .DS_Store
-Thumbs.db
-```
