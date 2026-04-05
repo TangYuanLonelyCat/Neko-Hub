@@ -27,6 +27,16 @@ Neko-Hub is a multi-functional modular platform built on Java 21 and Kotlin. The
   - 语义化版本检查和兼容性验证
   - 模组热插拔（加载/卸载）
 
+- **📝 Markdown 模块 (Markdown Module) - v2.0.0**
+  - GitHub Flavored Markdown (GFM) 支持：任务列表、删除线、表格
+  - 代码语法高亮（Highlight.js）
+  - 数学公式支持（KaTeX/LaTeX）
+  - 自动生成目录 (TOC)
+  - 主题切换（浅色/深色模式）
+  - 图片相对路径解析
+  - 导出为 HTML/PDF
+  - 可配置的用户选项
+
 - **📢 广播域系统 (Broadcast Domain System)**
   - 多类型域支持（公开公共域、公开私有域、私有域）
   - 四级权限控制（SUPER_ADMIN、SYSTEM_COMPONENT、NORMAL_COMPONENT、RESTRICTED_COMPONENT）
@@ -203,6 +213,38 @@ class MyKotlinMod : ModAPI {
         println("Kotlin mod unloaded!")
     }
 }
+```
+
+### Markdown 模块使用示例 | Markdown Module Example
+
+```kotlin
+import net.lemoncookie.neko.markdown.Markdown
+import net.lemoncookie.neko.markdown.javafx.MarkdownRenderer
+
+// 获取 Markdown 模块
+val markdown = modLoader.getModule<Markdown>("markdown")
+
+// 解析 Markdown
+val html = markdown.parse("# Hello\n\n**World**! - [x] Task")
+
+// 创建渲染器并显示
+val renderer = MarkdownRenderer(markdown, modLoader)
+val scene = renderer.createScene(800.0, 600.0)
+
+// 切换深色主题
+renderer.setTheme("dark")
+
+// 导出为 HTML/PDF
+renderer.exportToHtml("output.html")
+renderer.exportToPdf("output.pdf")
+
+// 修改配置
+markdown.config.update(
+    syntaxHighlight = true,
+    mathSupport = true,
+    autoToc = true,
+    theme = MarkdownConfig.Theme.DARK
+)
 ```
 
 ### JAR 文件清单配置 | JAR Manifest Configuration

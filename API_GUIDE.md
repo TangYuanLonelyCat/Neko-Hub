@@ -571,6 +571,189 @@ public class ModLoader {
 
 - `FileLabel` - 文件标签管理
 
+### 3. Markdown 模块 (`net.lemoncookie.neko.markdown`)
+
+Markdown 处理模块，提供完整的 Markdown 解析、渲染和导出功能（v2.0.0）。
+
+#### 核心功能
+
+- **GitHub Flavored Markdown (GFM) 支持**
+  - 任务列表 (Task Lists)
+  - 删除线 (Strikethrough)
+  - 表格 (Tables)
+
+- **代码语法高亮** - 使用 Highlight.js
+- **数学公式支持** - 使用 KaTeX/LaTeX
+- **自动生成目录 (TOC)** - 提取 h1-h6 标题
+- **主题切换** - 浅色/深色模式
+- **图片相对路径解析** - 自动处理本地图片路径
+- **导出功能** - HTML/PDF 导出
+- **配置系统** - 用户自定义选项
+
+#### 目录结构
+
+```
+markdown/
+├── src/main/kotlin/net/lemoncookie/neko/markdown/
+│   ├── Markdown.kt                    # 主类，解析核心
+│   ├── config/
+│   │   └── MarkdownConfig.kt          # 配置管理
+│   ├── export/
+│   │   └── MarkdownExporter.kt        # 导出功能
+│   └── javafx/
+│       └── MarkdownRenderer.kt        # JavaFX 渲染器
+└── src/main/resources/lang/
+    ├── en.json                        # 英文资源
+    └── zh.json                        # 中文资源
+```
+
+#### 主要 API
+
+```kotlin
+// Markdown 主类
+class Markdown : IModAPI {
+    val config: MarkdownConfig
+    
+    // 解析 Markdown 为 HTML
+    fun parse(markdown: String): String
+    
+    // 从文件读取并解析
+    fun parseFile(filePath: String): String?
+    
+    // 生成带目录的 HTML
+    fun generateWithToc(htmlContent: String, title: String = "", generateToc: Boolean = true): String
+}
+
+// 配置管理
+class MarkdownConfig {
+    var syntaxHighlightEnabled: Boolean
+    var mathSupportEnabled: Boolean
+    var autoTocEnabled: Boolean
+    var imageRelativePathEnabled: Boolean
+    var theme: Theme
+    
+    enum class Theme { LIGHT, DARK, SYSTEM }
+    
+    fun load(baseDir: File)
+    fun save()
+    fun update(syntaxHighlight: Boolean? = null, ...)
+}
+
+// JavaFX 渲染器
+class MarkdownRenderer(
+    private val markdown: Markdown, 
+    private val modLoader: ModLoader,
+    private val basePath: String? = null
+) {
+    fun createWebView(initialMarkdown: String? = null): WebView
+    fun updateContent(markdownText: String)
+    fun loadFromFile(filePath: String): Boolean
+    fun setTheme(theme: String)
+    fun exportToHtml(outputPath: String): Boolean
+    fun exportToPdf(outputPath: String): Boolean
+}
+
+// 导出器
+class MarkdownExporter(private val webView: WebView) {
+    fun exportToHtml(content: String, outputPath: String): Boolean
+    fun exportToPdf(outputPath: String): Boolean
+    fun generateFullHtml(bodyContent: String, ...): String
+}
+```
+
+#### 使用示例
+
+```kotlin
+// 获取 Markdown 模块实例
+val markdown = modLoader.getModule<Markdown>("markdown")
+
+// 解析 Markdown 文本
+val html = markdown.parse("# Hello\n\n**World**!")
+
+// 从文件加载
+val fileHtml = markdown.parseFile("README.md")
+
+// 创建渲染器
+val renderer = MarkdownRenderer(markdown, modLoader, "/path/to/markdown/dir")
+
+// 创建 JavaFX 场景
+val scene = renderer.createScene(800.0, 600.0)
+
+// 切换主题
+renderer.setTheme("dark")
+
+// 导出为 HTML
+renderer.exportToHtml("output.html")
+
+// 导出为 PDF
+renderer.exportToPdf("output.pdf")
+
+// 修改配置
+markdown.config.update(
+    syntaxHighlight = true,
+    mathSupport = true,
+    autoToc = true,
+    theme = MarkdownConfig.Theme.DARK
+)
+```
+
+#### 配置文件
+
+配置文件位于 `~/.neko-hub/markdown/config.properties`：
+
+```properties
+# 启用语法高亮
+syntax.highlight=true
+
+# 启用数学公式支持
+math.support=true
+
+# 自动生成目录
+auto.toc=true
+
+# 启用图片相对路径解析
+image.relative.path=true
+
+# 主题选择：LIGHT, DARK, SYSTEM
+theme=SYSTEM
+```
+
+#### GFM 扩展语法
+
+**任务列表：**
+```markdown
+- [x] 已完成的任务
+- [ ] 未完成的任务
+```
+
+**删除线：**
+```markdown
+~~已删除的内容~~
+```
+
+**表格：**
+```markdown
+| 列 1 | 列 2 |
+|------|------|
+| 内容 | 内容 |
+```
+
+#### 数学公式支持
+
+使用 LaTeX 语法：
+
+- 行内公式：`$E = mc^2$`
+- 块级公式：`$$\sum_{i=1}^{n} x_i$$`
+
+#### 依赖项
+
+- `org.commonmark:commonmark` - Markdown 解析核心
+- `org.commonmark:commonmark-ext-gfm-tables` - 表格扩展
+- `org.commonmark:commonmark-ext-gfm-strikethrough` - 删除线扩展
+- `org.commonmark:commonmark-ext-task-list-items` - 任务列表扩展
+- `Highlight.js` (CDN) - 代码高亮
+- `KaTeX` (CDN) - 数学公式渲染
+
 ### 5. Calendar 模块 (`net.lemoncookie.neko.calendar`)
 
 日历模块，提供日程管理功能。
