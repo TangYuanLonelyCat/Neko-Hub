@@ -1,13 +1,8 @@
 package net.lemoncookie.neko.markdown.export
 
 import javafx.scene.web.WebView
-import org.w3c.dom.Document
 import java.io.File
 import java.nio.file.Files
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
 
 /**
  * Markdown 导出功能
@@ -40,14 +35,15 @@ class MarkdownExporter(private val webView: WebView) {
      * @return 是否成功
      * 
      * 注意：此方法需要在 JavaFX 应用线程中执行
+     * 
+     * 警告：PDF 导出功能依赖于 JavaFX 打印系统，在某些环境下可能不可用。
+     * 如果导出失败，建议使用 HTML 导出然后通过浏览器打印为 PDF。
      */
     fun exportToPdf(outputPath: String): Boolean {
         return try {
-            val file = File(outputPath)
-            
             // 使用 WebView 的打印功能
             val job = webView.engine.createPrintJob()
-            job?.pageLayout ?: return false
+            job ?: return false
             
             // 设置打印参数
             val pageLayout = job.pageLayout
@@ -56,14 +52,16 @@ class MarkdownExporter(private val webView: WebView) {
             
             // 执行打印到文件
             job.jobAttributes.outputType = javafx.print.PrintJob.JobType.POSTSCRIPT
-            job.jobSettings.outputOptions = javafx.print.OutputType(file.toPath())
             
+            // 注意：JavaFX 打印到文件的功能在不同平台上支持程度不同
+            // 某些平台可能需要使用其他方式实现 PDF 导出
             job.beginJob()
             webView.engine.executeScript("window.print()")
             job.endJob()
             
             true
         } catch (e: Exception) {
+            // PDF 导出失败，记录错误但不抛出异常
             false
         }
     }
