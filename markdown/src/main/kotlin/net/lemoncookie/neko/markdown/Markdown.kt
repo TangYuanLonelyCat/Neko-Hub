@@ -114,14 +114,14 @@ class Markdown : IModAPI {
         }
         
         // 简单实现：提取 h1-h6 标签生成目录
-        val tocEntries = mutableListOf<Pair<String, String>>()
+        val tocEntries = mutableListOf<Triple<Int, String, String>>()
         val headingRegex = Regex("<h([1-6])[^>]*>(.*?)</h[1-6]>")
         
         for (match in headingRegex.findAll(htmlContent)) {
             val level = match.groupValues[1].toInt()
             val text = match.groupValues[2].replace(Regex("<[^>]*>"), "") // 移除 HTML 标签
             val id = text.lowercase().replace(Regex("[^a-z0-9]"), "-")
-            tocEntries.add(Pair(text, "#$id"))
+            tocEntries.add(Triple(level, text, "#$id"))
         }
         
         if (tocEntries.isEmpty()) {
@@ -134,13 +134,7 @@ class Markdown : IModAPI {
             append("<h3>${modLoader?.languageManager?.getMessage("markdown.toc.title") ?: "Table of Contents"}</h3>")
             append("<ul>")
             
-            var lastLevel = 0
-            for ((text, href) in tocEntries) {
-                val level = tocEntries.indexOf(Pair(text, href)).let { idx ->
-                    headingRegex.find(htmlContent, headingRegex.find(htmlContent)?.range?.last ?: 0)?.groupValues?.get(1)?.toIntOrNull() ?: 1
-                }
-                
-                // 简化处理，假设按顺序出现
+            for ((level, text, href) in tocEntries) {
                 append("<li><a href=\"$href\">$text</a></li>")
             }
             
