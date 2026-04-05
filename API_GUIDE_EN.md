@@ -629,7 +629,7 @@ The Markdown parser is responsible for converting Markdown text to HTML, with su
 class Markdown : IModAPI {
     // Module info
     override fun getModId(): String              // Returns "markdown"
-    override fun getVersion(): String            // Returns "1.0.0"
+    override fun getVersion(): String            // Returns "1.1.0"
     override fun getPackageName(): String        // Returns "net.lemoncookie.neko.markdown"
     override fun getName(): String               // Returns "Markdown Module"
     
@@ -703,6 +703,7 @@ renderer.loadFromFile("document.md")
 - Blockquote left border
 - Link hover effects
 - Image auto-sizing
+- Internationalization support (Chinese and English)
 
 ### 4. FileLabel Module (`net.lemoncookie.neko.filelabel`)
 

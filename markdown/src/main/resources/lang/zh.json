@@ -7,5 +7,8 @@
   "markdown.error.file_not_found": "Markdown 文件不存在：%s",
   "markdown.error.io_error": "读取 Markdown 文件时发生 IO 错误：%s",
   "markdown.success.parsed": "成功解析 Markdown 文档",
-  "markdown.success.rendered": "成功渲染 Markdown 为 HTML"
+  "markdown.success.rendered": "成功渲染 Markdown 为 HTML",
+  "markdown.ui.preview_title": "Markdown 预览",
+  "markdown.ui.preview_instruction": "选择文件或输入 markdown 文本进行预览。",
+  "markdown.error.display": "解析 markdown 时出错"
 }

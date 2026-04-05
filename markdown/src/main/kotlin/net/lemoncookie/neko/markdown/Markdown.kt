@@ -37,7 +37,7 @@ class Markdown : IModAPI {
                 modLoader?.languageManager?.getMessage("markdown.error.parse_failed", e.message) 
                     ?: "Markdown parse failed: ${e.message}"
             )
-            "<html><body>Error parsing markdown</body></html>"
+            "<html><body>${modLoader?.languageManager?.getMessage("markdown.error.display") ?: "Error parsing markdown"}</body></html>"
         }
     }
     
@@ -72,7 +72,7 @@ class Markdown : IModAPI {
     }
     
     override fun getVersion(): String {
-        return "1.0.0"
+        return "1.1.0"
     }
     
     override fun getPackageName(): String {
