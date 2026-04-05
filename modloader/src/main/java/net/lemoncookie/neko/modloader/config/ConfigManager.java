@@ -32,6 +32,9 @@ public class ConfigManager {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
         this.needsSave = new AtomicBoolean(false);
         
+        // 添加关闭钩子以确保 ScheduledExecutorService 在应用关闭时被正确关闭
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
+        
         // 加载配置
         loadConfig();
     }

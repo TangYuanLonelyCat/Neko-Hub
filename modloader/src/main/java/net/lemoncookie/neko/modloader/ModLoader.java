@@ -184,16 +184,39 @@ public class ModLoader {
      * 注册 Java 模组
      */
     public void registerJavaMod(IModAPI mod) {
-        int compatibilityLevel = checkApiVersionCompatibility(mod.getVersion());
+        if (mod == null) {
+            console.printError("Cannot register null mod");
+            return;
+        }
+        
+        String version = mod.getVersion();
+        if (version == null || version.trim().isEmpty()) {
+            console.printError("Mod version cannot be null or empty: " + mod.getName());
+            return;
+        }
+        
+        String name = mod.getName();
+        if (name == null || name.trim().isEmpty()) {
+            console.printError("Mod name cannot be null or empty");
+            return;
+        }
+        
+        String modId = mod.getModId();
+        if (modId == null || modId.trim().isEmpty()) {
+            console.printError("Mod ID cannot be null or empty for mod: " + name);
+            return;
+        }
+        
+        int compatibilityLevel = checkApiVersionCompatibility(version);
         
         if (compatibilityLevel == 2) {
-            console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
+            console.printError(languageManager.getMessage("modloader.error.api_version", name));
             return;
         }
         
         if (compatibilityLevel == 1) {
             console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
-                mod.getName(), mod.getVersion(), MIN_API_VERSION));
+                name, version, MIN_API_VERSION));
         }
 
         if (!checkDependencies(mod)) {
@@ -205,28 +228,28 @@ public class ModLoader {
         try {
             mod.onLoad(this);
         } catch (Throwable e) {
-            String errorMsg = "Error loading mod '" + mod.getName() + "': " + e.getMessage();
+            String errorMsg = "Error loading mod '" + name + "': " + e.getMessage();
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
         }
         
         try {
-            mod.registerCommands(this, mod.getModId());
+            mod.registerCommands(this, modId);
         } catch (Throwable e) {
-            String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
+            String errorMsg = "Error registering commands for mod '" + name + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
         try {
-            mod.registerBroadcastListeners(this, mod.getModId());
+            mod.registerBroadcastListeners(this, modId);
         } catch (Throwable e) {
-            String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
+            String errorMsg = "Error registering broadcast listeners for mod '" + name + "': " + e.getMessage();
             console.printWarning(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
-        String successMsg = "Mod loaded successfully: " + mod.getName() + " v" + mod.getVersion();
+        String successMsg = "Mod loaded successfully: " + name + " v" + version;
         console.printSuccess(successMsg);
         broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
     }
@@ -290,7 +313,8 @@ public class ModLoader {
      */
     private IModAPI getLoadedMod(String modId) {
         for (IModAPI loadedMod : javaMods) {
-            if (loadedMod.getModId().equals(modId)) {
+            String currentModId = loadedMod.getModId();
+            if (currentModId != null && currentModId.equals(modId)) {
                 return loadedMod;
             }
         }
@@ -392,39 +416,51 @@ public class ModLoader {
      */
     public boolean unloadMod(String modName) {
         // 尝试从 Java 模组中查找并卸载
+        IModAPI javaModToUnload = null;
         for (IModAPI javaMod : javaMods) {
             if (javaMod.getModId().equals(modName) || javaMod.getName().equals(modName)) {
-                try {
-                    javaMod.onUnload();
-                } catch (Throwable e) {
-                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
-                    console.printError(errorMsg);
-                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
-                }
-                javaMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-                String successMsg = "Mod unloaded successfully: " + modName;
-                console.printSuccess(successMsg);
-                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
-                return true;
+                javaModToUnload = javaMod;
+                break;
             }
+        }
+        
+        if (javaModToUnload != null) {
+            try {
+                javaModToUnload.onUnload();
+            } catch (Throwable e) {
+                String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                console.printError(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+            }
+            javaMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
+            String successMsg = "Mod unloaded successfully: " + modName;
+            console.printSuccess(successMsg);
+            broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
+            return true;
         }
 
         // 尝试从 Kotlin 模组中查找并卸载
+        KModAPI kotlinModToUnload = null;
         for (KModAPI kotlinMod : kotlinMods) {
             if (kotlinMod.getModId().equals(modName) || kotlinMod.getName().equals(modName)) {
-                try {
-                    kotlinMod.onUnload();
-                } catch (Throwable e) {
-                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
-                    console.printError(errorMsg);
-                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
-                }
-                kotlinMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-                String successMsg = "Mod unloaded successfully: " + modName;
-                console.printSuccess(successMsg);
-                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
-                return true;
+                kotlinModToUnload = kotlinMod;
+                break;
             }
+        }
+        
+        if (kotlinModToUnload != null) {
+            try {
+                kotlinModToUnload.onUnload();
+            } catch (Throwable e) {
+                String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                console.printError(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+            }
+            kotlinMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
+            String successMsg = "Mod unloaded successfully: " + modName;
+            console.printSuccess(successMsg);
+            broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
+            return true;
         }
 
         String notFoundMsg = "Mod not found: " + modName;

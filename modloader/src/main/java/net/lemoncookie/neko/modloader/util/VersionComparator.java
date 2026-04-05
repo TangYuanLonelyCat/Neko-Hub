@@ -41,13 +41,23 @@ public class VersionComparator {
      * @return 解析后的数字，如果解析失败返回 0
      */
     private static int parseVersionPart(String part) {
+        if (part == null || part.trim().isEmpty()) {
+            return 0;
+        }
         try {
             // 尝试解析数字
-            return Integer.parseInt(part);
+            return Integer.parseInt(part.trim());
         } catch (NumberFormatException e) {
             // 如果包含非数字字符（如 alpha, beta），尝试提取数字部分
             String digits = part.replaceAll("\\D+", "");
-            return digits.isEmpty() ? 0 : Integer.parseInt(digits);
+            if (digits.isEmpty()) {
+                return 0;
+            }
+            try {
+                return Integer.parseInt(digits);
+            } catch (NumberFormatException e2) {
+                return 0;  // Safe fallback
+            }
         }
     }
     

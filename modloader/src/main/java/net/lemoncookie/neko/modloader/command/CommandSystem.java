@@ -168,8 +168,39 @@ public class CommandSystem {
      * 例如：/date now "maomao.txt" --Maomao
      */
     private String[] parseCommand(String input) {
-        // 简单分割，后续可以扩展为支持引号的复杂解析
-        return input.split("\\s+", 2);
+        java.util.List<String> result = new java.util.ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        char quoteChar = 0;
+        
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            
+            if (!inQuotes && (c == '"' || c == '\'')) {
+                inQuotes = true;
+                quoteChar = c;
+            } else if (inQuotes && c == quoteChar) {
+                inQuotes = false;
+            } else if (!inQuotes && Character.isWhitespace(c)) {
+                if (current.length() > 0) {
+                    result.add(current.toString());
+                    current.setLength(0);
+                }
+            } else {
+                current.append(c);
+            }
+        }
+        
+        if (current.length() > 0) {
+            result.add(current.toString());
+        }
+        
+        if (result.isEmpty()) return new String[0];
+        if (result.size() == 1) return new String[]{result.get(0), ""};
+        
+        String command = result.get(0);
+        String arguments = String.join(" ", result.subList(1, result.size()));
+        return new String[]{command, arguments};
     }
 
     /**
