@@ -603,116 +603,6 @@ Accounting module, providing financial management features.
 
 - `Bookkeeping` - Accounting management class
 
-### 3. Markdown Module (`net.lemoncookie.neko.markdown`)
-
-Markdown processing module, supporting Markdown parsing and JavaFX rendering.
-
-#### Directory Structure
-
-```
-markdown/
-├── src/main/kotlin/net/lemoncookie/neko/markdown/
-│   ├── Markdown.kt                      # Markdown parser (implements IModAPI)
-│   └── javafx/
-│       └── MarkdownRenderer.kt          # JavaFX renderer
-└── src/main/resources/lang/
-    ├── zh.json                          # Chinese language file
-    └── en.json                          # English language file
-```
-
-#### Markdown Parser (`net.lemoncookie.neko.markdown`)
-
-The Markdown parser is responsible for converting Markdown text to HTML, with support for reading content from files.
-
-```kotlin
-// Markdown class
-class Markdown : IModAPI {
-    // Module info
-    override fun getModId(): String              // Returns "markdown"
-    override fun getVersion(): String            // Returns "1.1.0"
-    override fun getPackageName(): String        // Returns "net.lemoncookie.neko.markdown"
-    override fun getName(): String               // Returns "Markdown Module"
-    
-    // Lifecycle
-    override fun onLoad(modLoader: ModLoader, modId: String)
-    override fun onUnload()
-    
-    // Markdown parsing
-    fun parse(markdown: String): String          // Parse Markdown to HTML
-    fun parseFile(filePath: String): String?     // Read from file and parse
-}
-```
-
-**Usage Example:**
-
-```kotlin
-// Create Markdown instance
-val markdown = Markdown()
-
-// Parse Markdown text
-val html = markdown.parse("# Hello\n\nThis is **bold** text.")
-
-// Parse from file
-val htmlFromFile = markdown.parseFile("path/to/file.md")
-```
-
-#### JavaFX Renderer (`net.lemoncookie.neko.markdown.javafx`)
-
-The JavaFX renderer uses WebView component to display rendered Markdown content.
-
-```kotlin
-// MarkdownRenderer class
-class MarkdownRenderer(private val markdown: Markdown, private val modLoader: ModLoader) {
-    // Create WebView component
-    fun createWebView(initialMarkdown: String? = null): WebView
-    
-    // Update content
-    fun updateContent(markdownText: String)
-    
-    // Load from file
-    fun loadFromFile(filePath: String): Boolean
-    
-    // Create full scene
-    fun createScene(width: Double = 800.0, height: Double = 600.0): Scene
-    
-    // Get WebView
-    fun getWebView(): WebView?
-}
-```
-
-**Usage Example:**
-
-```kotlin
-// Create renderer
-val renderer = MarkdownRenderer(markdown, modLoader)
-
-// Create WebView and display
-val webView = renderer.createWebView("# Hello World")
-
-// Update content
-renderer.updateContent("## New Content\n\nUpdated text.")
-
-// Load from file
-renderer.loadFromFile("document.md")
-```
-
-**Style Features:**
-- Responsive layout, max width 900px
-- Code block highlighting
-- Table styling
-- Blockquote left border
-- Link hover effects
-- Image auto-sizing
-- Internationalization support (Chinese and English)
-
-### 4. FileLabel Module (`net.lemoncookie.neko.filelabel`)
-
-File label module, supporting file tagging and management.
-
-- `FileLabel` - File label management
-
-### 5. Calendar Module (`net.lemoncookie.neko.calendar`)
-
 Calendar module, providing schedule management features.
 
 - `Calendar` - Calendar management
@@ -976,3 +866,204 @@ val lib = kotlinModLibrary {
 ```bash
 ./gradlew test
 ```
+
+### 3. Markdown Module (`net.lemoncookie.neko.markdown`)
+
+Markdown processing module, supporting Markdown parsing and JavaFX rendering.
+
+#### Directory Structure
+
+```
+markdown/
+├── src/main/kotlin/net/lemoncookie/neko/markdown/
+│   ├── Markdown.kt                      # Markdown parser (implements IModAPI)
+│   ├── config/
+│   │   └── MarkdownConfig.kt            # Configuration manager
+│   ├── export/
+│   │   └── MarkdownExporter.kt          # Export functionality (HTML/PDF)
+│   └── javafx/
+│       └── MarkdownRenderer.kt          # JavaFX renderer
+└── src/main/resources/lang/
+    ├── zh.json                          # Chinese language file
+    └── en.json                          # English language file
+```
+
+#### Markdown Parser (`net.lemoncookie.neko.markdown`)
+
+The Markdown parser is responsible for converting Markdown text to HTML, with support for reading content from files.
+
+**Supported Features:**
+- GitHub Flavored Markdown (GFM): Task lists, strikethrough, tables
+- Code syntax highlighting (Highlight.js)
+- Math formulas (KaTeX/LaTeX)
+- Table of Contents generation (TOC)
+- Theme switching (Light/Dark mode)
+- Relative image path resolution
+- Export to HTML/PDF
+- Configuration system
+
+```kotlin
+// Markdown class
+class Markdown : IModAPI {
+    // Module info
+    override fun getModId(): String              // Returns "markdown"
+    override fun getVersion(): String            // Returns "2.0.0"
+    override fun getPackageName(): String        // Returns "net.lemoncookie.neko.markdown"
+    override fun getName(): String               // Returns "Markdown Module"
+
+    // Lifecycle
+    override fun onLoad(modLoader: ModLoader, modId: String)
+    override fun onUnload()
+
+    // Configuration manager
+    val config: MarkdownConfig
+
+    // Markdown parsing
+    fun parse(markdown: String): String          // Parse Markdown to HTML (with GFM support)
+    fun parseFile(filePath: String): String?     // Read from file and parse
+    fun generateWithToc(htmlContent: String, title: String = "", generateToc: Boolean = true): String  // Generate document with TOC
+}
+```
+
+**Usage Example:**
+
+```kotlin
+// Create Markdown instance
+val markdown = Markdown()
+
+// Parse Markdown text (with GFM support)
+val html = markdown.parse("# Hello\n\nThis is **bold** text.\n\n- [ ] Task 1\n- [x] Task 2\n\n~~strikethrough~~")
+
+// Parse from file
+val htmlFromFile = markdown.parseFile("path/to/file.md")
+
+// Generate document with TOC
+val withToc = markdown.generateWithToc(html, "My Document")
+
+// Access configuration
+val syntaxHighlight = markdown.config.syntaxHighlightEnabled
+markdown.config.update(syntaxHighlight = false)
+```
+
+#### Configuration Manager (`net.lemoncookie.neko.markdown.config`)
+
+The configuration manager handles user-customizable options.
+
+```kotlin
+// MarkdownConfig class
+class MarkdownConfig {
+    // Configuration options
+    var syntaxHighlightEnabled: Boolean      // Syntax highlighting toggle
+    var mathSupportEnabled: Boolean          // Math formula support toggle
+    var autoTocEnabled: Boolean              // Auto-generate TOC toggle
+    var imageRelativePathEnabled: Boolean    // Relative image path resolution toggle
+    var theme: Theme                         // Theme (LIGHT/DARK/SYSTEM)
+    
+    // Methods
+    fun load(baseDir: File)                  // Load configuration
+    fun save()                               // Save configuration
+    fun update(...)                          // Update configuration
+}
+```
+
+**Usage Example:**
+
+```kotlin
+// Load configuration
+markdown.config.load(File(System.getProperty("user.home"), ".neko-hub"))
+
+// Update configuration
+markdown.config.update(
+    syntaxHighlight = true,
+    mathSupport = true,
+    theme = MarkdownConfig.Theme.DARK
+)
+```
+
+#### JavaFX Renderer (`net.lemoncookie.neko.markdown.javafx`)
+
+The JavaFX renderer uses WebView component to display rendered Markdown content.
+
+```kotlin
+// MarkdownRenderer class
+class MarkdownRenderer(
+    private val markdown: Markdown, 
+    private val modLoader: ModLoader,
+    private val basePath: String? = null
+) {
+    // Create WebView component
+    fun createWebView(initialMarkdown: String? = null): WebView
+
+    // Update content
+    fun updateContent(markdownText: String)
+
+    // Load from file
+    fun loadFromFile(filePath: String): Boolean
+
+    // Create full scene
+    fun createScene(width: Double = 800.0, height: Double = 600.0): Scene
+
+    // Get WebView
+    fun getWebView(): WebView?
+    
+    // Switch theme
+    fun setTheme(theme: String)
+    
+    // Export functionality
+    fun exportToHtml(outputPath: String): Boolean
+    fun exportToPdf(outputPath: String): Boolean
+    
+    // Generate full HTML
+    fun generateFullHtml(): String
+}
+```
+
+**Usage Example:**
+
+```kotlin
+// Create renderer
+val renderer = MarkdownRenderer(markdown, modLoader, basePath = "/path/to/markdown/files")
+
+// Create WebView and display
+val webView = renderer.createWebView("# Hello World")
+
+// Update content
+renderer.updateContent("## New Content\n\nUpdated text.")
+
+// Load from file
+renderer.loadFromFile("document.md")
+
+// Switch theme
+renderer.setTheme("dark")
+
+// Export to HTML
+renderer.exportToHtml("/path/to/output.html")
+
+// Export to PDF
+renderer.exportToPdf("/path/to/output.pdf")
+```
+
+**Style Features:**
+- Responsive layout, max width 900px
+- GitHub Flavored Markdown support (task lists, strikethrough, tables)
+- Code syntax highlighting (Highlight.js, light/dark theme support)
+- Math formula rendering (KaTeX)
+- Auto-generated table of contents (TOC)
+- Theme switching (Light/Dark mode)
+- Automatic relative image path resolution
+- Blockquote left border
+- Link hover effects
+- Image auto-sizing
+- Internationalization support (Chinese and English)
+
+### 4. FileLabel Module (`net.lemoncookie.neko.filelabel`)
+
+File label module, supporting file tagging and management.
+
+- `FileLabel` - File label management
+
+### 5. Calendar Module (`net.lemoncookie.neko.calendar`)
+
+Calendar module, providing schedule management features.
+
+- `Calendar` - Calendar management

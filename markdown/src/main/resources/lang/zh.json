@@ -10,5 +10,18 @@
   "markdown.success.rendered": "成功渲染 Markdown 为 HTML",
   "markdown.ui.preview_title": "Markdown 预览",
   "markdown.ui.preview_instruction": "选择文件或输入 markdown 文本进行预览。",
-  "markdown.error.display": "解析 markdown 时出错"
+  "markdown.error.display": "解析 markdown 时出错",
+  "markdown.theme.light": "浅色主题",
+  "markdown.theme.dark": "深色主题",
+  "markdown.theme.system": "系统主题",
+  "markdown.toc.title": "目录",
+  "markdown.export.html": "导出为 HTML",
+  "markdown.export.pdf": "导出为 PDF",
+  "markdown.export.success": "导出成功：%s",
+  "markdown.export.failed": "导出失败：%s",
+  "markdown.config.title": "Markdown 设置",
+  "markdown.config.syntax_highlight": "语法高亮",
+  "markdown.config.math_support": "数学公式支持",
+  "markdown.config.auto_toc": "自动生成目录",
+  "markdown.config.image_relative_path": "相对图片路径解析"
 }

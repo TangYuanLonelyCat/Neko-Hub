@@ -2,9 +2,13 @@ package net.lemoncookie.neko.markdown
 
 import net.lemoncookie.neko.modloader.ModLoader
 import net.lemoncookie.neko.modloader.api.IModAPI
+import net.lemoncookie.neko.markdown.config.MarkdownConfig
 import org.commonmark.node.Node
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.html.HtmlRenderer
+import org.commonmark.ext.gfm.tables.*
+import org.commonmark.ext.gfm.strikethrough.*
+import org.commonmark.ext.task.list.items.*
 import java.io.File
 import java.nio.file.Files
 
@@ -12,14 +16,27 @@ import java.nio.file.Files
  * Markdown 模块 - 支持 Markdown 解析和 JavaFX 渲染
  * 
  * 功能：
- * - 解析 Markdown 文本为 HTML
+ * - 解析 Markdown 文本为 HTML（支持 GFM）
  * - 使用 JavaFX WebView 渲染 Markdown
  * - 支持从文件读取 Markdown 内容
+ * - 支持 GitHub Flavored Markdown (GFM)：任务列表、删除线、表格
+ * - 支持代码语法高亮（Highlight.js）
+ * - 支持数学公式（KaTeX/LaTeX）
+ * - 支持目录生成 (TOC)
+ * - 支持主题切换（浅色/深色模式）
+ * - 支持图片相对路径解析
+ * - 支持导出为 HTML/PDF
+ * - 支持配置系统
  */
 class Markdown : IModAPI {
     
     private var modLoader: ModLoader? = null
     private var modId: String? = null
+    
+    /**
+     * 配置管理器
+     */
+    val config = MarkdownConfig()
     
     /**
      * 解析 Markdown 文本为 HTML
@@ -28,9 +45,26 @@ class Markdown : IModAPI {
      */
     fun parse(markdown: String): String {
         return try {
-            val parser: Parser = Parser.builder().build()
+            // 构建支持 GFM 的解析器
+            val parser: Parser = Parser.builder()
+                .extensions(listOf(
+                    TablesExtension.create(),
+                    StrikethroughExtension.create(),
+                    TaskListItemsExtension.create()
+                ))
+                .build()
+            
             val document: Node = parser.parse(markdown)
-            val renderer: HtmlRenderer = HtmlRenderer.builder().build()
+            
+            // 构建支持 GFM 的 HTML 渲染器
+            val renderer: HtmlRenderer = HtmlRenderer.builder()
+                .extensions(listOf(
+                    TablesExtension.create(),
+                    StrikethroughExtension.create(),
+                    TaskListItemsExtension.create()
+                ))
+                .build()
+            
             renderer.render(document)
         } catch (e: Exception) {
             modLoader?.console?.printError(
@@ -67,12 +101,62 @@ class Markdown : IModAPI {
         }
     }
     
+    /**
+     * 从 HTML 内容生成带目录的完整文档
+     * @param htmlContent HTML 正文内容
+     * @param title 文档标题
+     * @param generateToc 是否生成目录
+     * @return 带目录的 HTML 文档
+     */
+    fun generateWithToc(htmlContent: String, title: String = "", generateToc: Boolean = true): String {
+        if (!generateToc || !config.autoTocEnabled) {
+            return htmlContent
+        }
+        
+        // 简单实现：提取 h1-h6 标签生成目录
+        val tocEntries = mutableListOf<Pair<String, String>>()
+        val headingRegex = Regex("<h([1-6])[^>]*>(.*?)</h[1-6]>")
+        
+        for (match in headingRegex.findAll(htmlContent)) {
+            val level = match.groupValues[1].toInt()
+            val text = match.groupValues[2].replace(Regex("<[^>]*>"), "") // 移除 HTML 标签
+            val id = text.lowercase().replace(Regex("[^a-z0-9]"), "-")
+            tocEntries.add(Pair(text, "#$id"))
+        }
+        
+        if (tocEntries.isEmpty()) {
+            return htmlContent
+        }
+        
+        // 生成目录 HTML
+        val tocHtml = buildString {
+            append("<div class=\"toc\">")
+            append("<h3>${modLoader?.languageManager?.getMessage("markdown.toc.title") ?: "Table of Contents"}</h3>")
+            append("<ul>")
+            
+            var lastLevel = 0
+            for ((text, href) in tocEntries) {
+                val level = tocEntries.indexOf(Pair(text, href)).let { idx ->
+                    headingRegex.find(htmlContent, headingRegex.find(htmlContent)?.range?.last ?: 0)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                }
+                
+                // 简化处理，假设按顺序出现
+                append("<li><a href=\"$href\">$text</a></li>")
+            }
+            
+            append("</ul>")
+            append("</div>")
+        }
+        
+        return tocHtml + htmlContent
+    }
+    
     override fun getModId(): String {
         return modId ?: "markdown"
     }
     
     override fun getVersion(): String {
-        return "1.1.0"
+        return "2.0.0"
     }
     
     override fun getPackageName(): String {
@@ -87,12 +171,19 @@ class Markdown : IModAPI {
         this.modLoader = modLoader
         this.modId = modId
         
+        // 加载配置
+        val dataDir = File(System.getProperty("user.home"), ".neko-hub")
+        config.load(dataDir)
+        
         modLoader.console.printInfo(
             modLoader.languageManager.getMessage("markdown.info.initialized")
         )
     }
     
     override fun onUnload() {
+        // 保存配置
+        config.save()
+        
         modLoader?.console?.printInfo(
             modLoader?.languageManager?.getMessage("markdown.info.unloaded")
                 ?: "Markdown module unloaded"
