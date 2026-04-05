@@ -1,0 +1,11 @@
+{
+  "markdown.version": "Markdown Module v%s",
+  "markdown.info.initialized": "Markdown module initialized",
+  "markdown.info.unloaded": "Markdown module unloaded",
+  "markdown.error.parse_failed": "Markdown parse failed: %s",
+  "markdown.error.render_failed": "Markdown render failed: %s",
+  "markdown.error.file_not_found": "Markdown file not found: %s",
+  "markdown.error.io_error": "IO error reading Markdown file: %s",
+  "markdown.success.parsed": "Successfully parsed Markdown document",
+  "markdown.success.rendered": "Successfully rendered Markdown to HTML"
+}

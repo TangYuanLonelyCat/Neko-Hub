@@ -1,0 +1,11 @@
+{
+  "markdown.version": "Markdown Module v%s",
+  "markdown.info.initialized": "Markdown 模块已初始化",
+  "markdown.info.unloaded": "Markdown 模块已卸载",
+  "markdown.error.parse_failed": "Markdown 解析失败：%s",
+  "markdown.error.render_failed": "Markdown 渲染失败：%s",
+  "markdown.error.file_not_found": "Markdown 文件不存在：%s",
+  "markdown.error.io_error": "读取 Markdown 文件时发生 IO 错误：%s",
+  "markdown.success.parsed": "成功解析 Markdown 文档",
+  "markdown.success.rendered": "成功渲染 Markdown 为 HTML"
+}
