@@ -213,7 +213,7 @@ public class BootFileManager {
      * 拓扑排序
      * 
      * @param modInfoMap 模组信息映射表
-     * @return 排序后的模组 ID 列表
+     * @return 排序后的模组 ID 列表（依赖在前，被依赖者在后）
      * @throws CircularDependencyException 如果存在循环依赖
      */
     private List<String> topologicalSort(Map<String, ModInfo> modInfoMap) throws CircularDependencyException {
@@ -231,8 +231,8 @@ public class BootFileManager {
             }
         }
         
-        // 反转结果（拓扑排序的结果是逆序的）
-        java.util.Collections.reverse(result);
+        // 注意：DFS 后序遍历已经得到正确的依赖顺序（依赖在前）
+        // 不需要反转结果
         return result;
     }
     
