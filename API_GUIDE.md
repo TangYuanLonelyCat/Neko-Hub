@@ -571,9 +571,104 @@ public class ModLoader {
 
 ### 3. Markdown 模块 (`net.lemoncookie.neko.markdown`)
 
-Markdown 处理模块，支持 Markdown 解析和渲染。
+Markdown 处理模块，支持 Markdown 解析和 JavaFX 渲染。
 
-- `Markdown` - Markdown 解析器
+#### 目录结构
+
+```
+markdown/
+├── src/main/kotlin/net/lemoncookie/neko/markdown/
+│   ├── Markdown.kt                      # Markdown 解析器（实现 IModAPI）
+│   └── javafx/
+│       └── MarkdownRenderer.kt          # JavaFX 渲染器
+└── src/main/resources/lang/
+    ├── zh.json                          # 中文语言文件
+    └── en.json                          # 英文语言文件
+```
+
+#### Markdown 解析器 (`net.lemoncookie.neko.markdown`)
+
+Markdown 解析器负责将 Markdown 文本转换为 HTML，支持从文件读取内容。
+
+```kotlin
+// Markdown 类
+class Markdown : IModAPI {
+    // 模组信息
+    override fun getModId(): String              // 返回 "markdown"
+    override fun getVersion(): String            // 返回 "1.0.0"
+    override fun getPackageName(): String        // 返回 "net.lemoncookie.neko.markdown"
+    override fun getName(): String               // 返回 "Markdown Module"
+    
+    // 生命周期
+    override fun onLoad(modLoader: ModLoader, modId: String)
+    override fun onUnload()
+    
+    // Markdown 解析
+    fun parse(markdown: String): String          // 解析 Markdown 为 HTML
+    fun parseFile(filePath: String): String?     // 从文件读取并解析
+}
+```
+
+**使用示例：**
+
+```kotlin
+// 创建 Markdown 实例
+val markdown = Markdown()
+
+// 解析 Markdown 文本
+val html = markdown.parse("# Hello\n\nThis is **bold** text.")
+
+// 从文件解析
+val htmlFromFile = markdown.parseFile("path/to/file.md")
+```
+
+#### JavaFX 渲染器 (`net.lemoncookie.neko.markdown.javafx`)
+
+JavaFX 渲染器使用 WebView 组件显示渲染后的 Markdown 内容。
+
+```kotlin
+// MarkdownRenderer 类
+class MarkdownRenderer(private val markdown: Markdown, private val modLoader: ModLoader) {
+    // 创建 WebView 组件
+    fun createWebView(initialMarkdown: String? = null): WebView
+    
+    // 更新内容
+    fun updateContent(markdownText: String)
+    
+    // 从文件加载
+    fun loadFromFile(filePath: String): Boolean
+    
+    // 创建完整场景
+    fun createScene(width: Double = 800.0, height: Double = 600.0): Scene
+    
+    // 获取 WebView
+    fun getWebView(): WebView?
+}
+```
+
+**使用示例：**
+
+```kotlin
+// 创建渲染器
+val renderer = MarkdownRenderer(markdown, modLoader)
+
+// 创建 WebView 并显示
+val webView = renderer.createWebView("# Hello World")
+
+// 更新内容
+renderer.updateContent("## New Content\n\nUpdated text.")
+
+// 从文件加载
+renderer.loadFromFile("document.md")
+```
+
+**样式特性：**
+- 响应式布局，最大宽度 900px
+- 代码块高亮显示
+- 表格样式美化
+- 引用块左侧边框
+- 链接悬停效果
+- 图片自适应宽度
 
 ### 4. FileLabel 模块 (`net.lemoncookie.neko.filelabel`)
 
