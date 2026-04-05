@@ -231,8 +231,6 @@ public class BootFileManager {
             }
         }
         
-        // 反转结果（拓扑排序的结果是逆序的）
-        java.util.Collections.reverse(result);
         return result;
     }
     
