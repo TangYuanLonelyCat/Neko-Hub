@@ -10,32 +10,27 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 监听命令
  * 监听/取消监听特定广播域
+ * 监听 Hub.Command 广播域
  */
-public class ListenCommand implements Command {
-
-    // 存储监听器映射：域名 -> 监听器
+public class ListenCommand extends BaseCommandListener {
+    
     private static final Map<String, MessageListener> listeners = new ConcurrentHashMap<>();
-
+    
+    public ListenCommand(ModLoader modLoader) {
+        super(modLoader, "listen");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
-        if (args.isEmpty()) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
+        if (commandMessage.getPartCount() < 2) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/listen [域名] [start|stop]")
             );
             return;
         }
 
-        // 解析参数：域名和操作
-        String[] parts = args.split("\\s+", 2);
-        if (parts.length < 2) {
-            modLoader.getConsole().printError(
-                modLoader.getLanguageManager().getMessage("command.error.args", "/listen [域名] [start|stop]")
-            );
-            return;
-        }
-
-        String domainName = parts[0].trim();
-        String action = parts[1].trim().toLowerCase();
+        String domainName = commandMessage.getPart(0).trim();
+        String action = commandMessage.getPart(1).trim().toLowerCase();
 
         switch (action) {
             case "start":
@@ -50,17 +45,12 @@ public class ListenCommand implements Command {
         }
     }
 
-    /**
-     * 开始监听指定域
-     */
     private void startListening(ModLoader modLoader, String domainName) {
-        // 检查是否已经在监听
         if (listeners.containsKey(domainName)) {
             modLoader.getConsole().printWarning("Already listening to domain: " + domainName);
             return;
         }
 
-        // 创建监听器
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessageReceived(String domain, String message, String senderModId) {
@@ -68,7 +58,6 @@ public class ListenCommand implements Command {
             }
         };
 
-        // 注册监听器
         int result = modLoader.getBroadcastManager().listen(domainName, listener, "Console", "Console");
         
         if (result == 0) {
@@ -79,18 +68,13 @@ public class ListenCommand implements Command {
         }
     }
 
-    /**
-     * 停止监听指定域
-     */
     private void stopListening(ModLoader modLoader, String domainName) {
-        // 检查是否在监听
         MessageListener listener = listeners.remove(domainName);
         if (listener == null) {
             modLoader.getConsole().printWarning("Not listening to domain: " + domainName);
             return;
         }
 
-        // 从广播域管理器移除监听器
         int result = modLoader.getBroadcastManager().unlisten(domainName, listener);
         
         if (result == BroadcastManager.ERROR_SUCCESS) {
@@ -100,15 +84,5 @@ public class ListenCommand implements Command {
         } else {
             modLoader.getConsole().printError("Failed to stop listening. Error code: " + result);
         }
-    }
-
-    @Override
-    public String getDescription() {
-        return "监听/取消监听特定广播域";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/listen [域名] [start|stop]";
     }
 }

@@ -100,7 +100,13 @@ public class BootFileManager {
         }
         
         for (String command : commands) {
-            modLoader.getCommandSystem().executeCommand(command);
+            // 模拟控制台输入，发送到 Hub.Command 广播域
+            if (command.startsWith("/")) {
+                modLoader.getConsole().handleCommand(command.substring(1));
+            } else {
+                // 非命令输入发送到 Hub.Console
+                modLoader.getBroadcastManager().broadcast("Hub.Console", command, "BootFile");
+            }
         }
         
         return true;

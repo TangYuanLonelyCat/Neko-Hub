@@ -7,17 +7,25 @@ import java.util.Map;
 
 /**
  * 帮助命令
+ * 监听 Hub.Command 广播域
  */
-public class HelpCommand implements Command {
-
+public class HelpCommand extends BaseCommandListener {
+    
+    public HelpCommand(ModLoader modLoader) {
+        super(modLoader, "help");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
         try {
             String targetMod = "system";
-            if (args.startsWith("--")) {
-                targetMod = args.substring(2).trim();
-            } else if (!args.isEmpty()) {
-                targetMod = args.trim();
+            if (commandMessage.getPartCount() > 0) {
+                String arg = commandMessage.getPart(0);
+                if (arg.startsWith("--")) {
+                    targetMod = arg.substring(2).trim();
+                } else {
+                    targetMod = arg.trim();
+                }
             }
             
             if ("system".equals(targetMod)) {
@@ -26,12 +34,18 @@ public class HelpCommand implements Command {
                 modLoader.getConsole().printCyan("? " + modLoader.getLanguageManager().getMessage("command.help.info.system_title"));
                 modLoader.getConsole().printLine();
                 
-                modLoader.getCommandSystem().getCommands().forEach((name, command) -> {
-                    modLoader.getConsole().printLine("/" + name + " - " + command.getDescription());
-                    modLoader.getConsole().printLine("  " + modLoader.getLanguageManager().getMessage("command.help.info.usage", command.getUsage()));
-                    modLoader.getConsole().printLine();
-                });
-                
+                modLoader.getConsole().printLine("Available commands:");
+                modLoader.getConsole().printLine("  /set - Set configuration (modPermission, bootfile, language)");
+                modLoader.getConsole().printLine("  /clear - Clear the console");
+                modLoader.getConsole().printLine("  /load - Load a mod from JAR file");
+                modLoader.getConsole().printLine("  /unload - Unload a mod by name");
+                modLoader.getConsole().printLine("  /list - List loaded mods");
+                modLoader.getConsole().printLine("  /help - Show this help message");
+                modLoader.getConsole().printLine("  /exit - Exit the application");
+                modLoader.getConsole().printLine("  /say - Broadcast a message");
+                modLoader.getConsole().printLine("  /listen - Listen to a domain");
+                modLoader.getConsole().printLine("  /autoboot - Manage auto-boot configuration");
+                modLoader.getConsole().printLine();
                 modLoader.getConsole().printLine("═══════════════════════════════════════");
             } else {
                 boolean found = false;
@@ -42,28 +56,10 @@ public class HelpCommand implements Command {
                         modLoader.getConsole().printLine("═══════════════════════════════════════");
                         modLoader.getConsole().printCyan("? " + modLoader.getLanguageManager().getMessage("command.help.info.mod_title", mod.getName()));
                         modLoader.getConsole().printLine();
-                        
-                        Map<String, Command> commands = modLoader.getCommandSystem().getCommands();
-                        boolean hasCommands = false;
-                        for (Map.Entry<String, Command> entry : commands.entrySet()) {
-                            // 简单判断：如果命令描述或用法中包含模组 ID 或名称
-                            Command cmd = entry.getValue();
-                            if (cmd.getDescription().contains(mod.getModId()) || 
-                                cmd.getDescription().contains(mod.getName()) ||
-                                cmd.getUsage().contains(mod.getModId()) ||
-                                cmd.getUsage().contains(mod.getName())) {
-                                modLoader.getConsole().printLine("/" + entry.getKey() + " - " + cmd.getDescription());
-                                modLoader.getConsole().printLine("  " + modLoader.getLanguageManager().getMessage("command.help.info.usage", cmd.getUsage()));
-                                modLoader.getConsole().printLine();
-                                hasCommands = true;
-                            }
-                        }
-                        
-                        if (!hasCommands) {
-                            modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.info.no_commands"));
-                            modLoader.getConsole().printLine();
-                        }
-                        
+                        modLoader.getConsole().printLine("Mod ID: " + mod.getModId());
+                        modLoader.getConsole().printLine("Version: " + mod.getVersion());
+                        modLoader.getConsole().printLine("Package: " + mod.getPackageName());
+                        modLoader.getConsole().printLine();
                         modLoader.getConsole().printLine("═══════════════════════════════════════");
                         break;
                     }
@@ -71,21 +67,11 @@ public class HelpCommand implements Command {
                 
                 if (!found) {
                     modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.help.error.mod_not_found", targetMod));
-                    modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.info.use_system"));
+                    modLoader.getConsole().printLine("Use /help to see system commands");
                 }
             }
         } catch (Throwable e) {
             modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.help.error.failed", e.getMessage()));
         }
-    }
-
-    @Override
-    public String getDescription() {
-        return "Show available commands (use --system or --modname to specify)";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/help [--system|--modname]";
     }
 }

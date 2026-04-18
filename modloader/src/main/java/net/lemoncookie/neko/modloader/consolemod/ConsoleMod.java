@@ -22,7 +22,7 @@ public class ConsoleMod implements IModAPI {
     
     @Override
     public String getVersion() {
-        return "2.0.0";
+        return "3.0.0";
     }
     
     @Override
@@ -104,8 +104,7 @@ public class ConsoleMod implements IModAPI {
     
     @Override
     public void registerCommands(ModLoader modLoader, String modId) {
-        // 控制台模组不需要注册命令
-        // modId 参数未使用，但必须实现接口
+        // 已废弃，命令系统改为通过广播域执行
     }
     
     @Override

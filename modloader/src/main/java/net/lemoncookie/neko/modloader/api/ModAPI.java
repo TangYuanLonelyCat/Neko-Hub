@@ -2,8 +2,6 @@ package net.lemoncookie.neko.modloader.api;
 
 import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
-import net.lemoncookie.neko.modloader.command.Command;
-import net.lemoncookie.neko.modloader.command.CommandSystem;
 import net.lemoncookie.neko.modloader.console.Console;
 
 /**
@@ -11,7 +9,7 @@ import net.lemoncookie.neko.modloader.console.Console;
  * 提供便捷的 API 访问方法，简化模组开发
  * 
  * @author LemonCookie
- * @version 1.0.0
+ * @version 2.0.0
  */
 public class ModAPI {
     
@@ -26,28 +24,6 @@ public class ModAPI {
     public ModAPI(ModLoader modLoader, String modId) {
         this.modLoader = modLoader;
         this.modId = modId;
-    }
-    
-    // ==================== 命令注册 ====================
-    
-    /**
-     * 注册命令
-     * @param name 命令名称
-     * @param command 命令对象
-     * @param allowOverride 是否允许覆盖其他模组的命令
-     * @return 是否注册成功
-     */
-    public boolean registerCommand(String name, Command command, boolean allowOverride) {
-        return modLoader.getCommandSystem().registerCommand(name, modId, command, allowOverride);
-    }
-    
-    /**
-     * 注册命令（默认允许覆盖）
-     * @param name 命令名称
-     * @param command 命令对象
-     */
-    public void registerCommand(String name, Command command) {
-        modLoader.getCommandSystem().registerCommand(name, modId, command);
     }
     
     // ==================== 广播系统 ====================

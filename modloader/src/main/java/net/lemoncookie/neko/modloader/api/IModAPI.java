@@ -54,16 +54,6 @@ public interface IModAPI {
     void onUnload();
 
     /**
-     * 注册命令
-     * @param modLoader ModLoader 实例
-     * @param modId 当前模组的 ID（自动传入）
-     */
-    default void registerCommands(ModLoader modLoader, String modId) {
-        // 子类可以覆盖此方法注册命令
-        // 使用 modLoader.getCommandSystem().registerCommand("命令名", modId, new 你的命令类 ()) 来注册命令
-    }
-
-    /**
      * 监听广播域
      * @param modLoader ModLoader 实例
      * @param modId 当前模组的 ID（自动传入）

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**一个多功能合一的模块化平台 | A Multi-Functional Modular Platform**
+**模组加载器核心 | ModLoader Core**
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-purple.svg)](https://kotlinlang.org/)
@@ -15,9 +15,9 @@
 
 ## 📖 简介 | Introduction
 
-Neko-Hub 是一个基于 Java 21 和 Kotlin 构建的多功能模块化平台。项目采用模块化设计，支持 CLI 模式，未来将扩展 GUI 模式。核心模组加载器（ModLoader）提供了完整的模组依赖管理、版本控制、日志记录和广播通信系统。
+Neko-Hub 是一个基于 Java 21 和 Kotlin 构建的模组加载器核心。项目专注于提供稳定、高效的模组加载和管理系统，支持 CLI 模式。核心模组加载器（ModLoader）提供了完整的模组依赖管理、版本控制、日志记录和广播通信系统。
 
-Neko-Hub is a multi-functional modular platform built on Java 21 and Kotlin. The project features a modular design with CLI support, with plans to extend to GUI mode. The core ModLoader provides comprehensive mod dependency management, version control, logging, and broadcast communication systems.
+Neko-Hub is a ModLoader core built on Java 21 and Kotlin. The project focuses on providing a stable and efficient mod loading and management system with CLI support. The core ModLoader provides comprehensive mod dependency management, version control, logging, and broadcast communication systems.
 
 ### ✨ 主要特性 | Key Features
 
@@ -26,16 +26,6 @@ Neko-Hub is a multi-functional modular platform built on Java 21 and Kotlin. The
   - 自动依赖解析和拓扑排序加载
   - 语义化版本检查和兼容性验证
   - 模组热插拔（加载/卸载）
-
-- **📝 Markdown 模块 (Markdown Module) - v2.0.0**
-  - GitHub Flavored Markdown (GFM) 支持：任务列表、删除线、表格
-  - 代码语法高亮（Highlight.js）
-  - 数学公式支持（KaTeX/LaTeX）
-  - 自动生成目录 (TOC)
-  - 主题切换（浅色/深色模式）
-  - 图片相对路径解析
-  - 导出为 HTML/PDF
-  - 可配置的用户选项
 
 - **📢 广播域系统 (Broadcast Domain System)**
   - 多类型域支持（公开公共域、公开私有域、私有域）
@@ -76,11 +66,8 @@ Neko-Hub/
 │   ├── core/                  # 核心实现
 │   ├── logging/               # 日志系统
 │   └── util/                  # 工具类（版本比较等）
-├── bookkeeping/               # 记账模块 | Bookkeeping Module
-├── markdown/                  # Markdown 处理模块 | Markdown Module
-├── filelabel/                 # 文件标签模块 | File Label Module
-├── calendar/                  # 日历模块 | Calendar Module
-├── todolist/                  # 待办事项模块 | TodoList Module
+├── testmod-a/                 # 测试模组 A | Test Mod A
+├── testmod-b/                 # 测试模组 B | Test Mod B
 └── utils/                     # 通用工具 | Utilities
 ```
 
@@ -213,38 +200,6 @@ class MyKotlinMod : ModAPI {
         println("Kotlin mod unloaded!")
     }
 }
-```
-
-### Markdown 模块使用示例 | Markdown Module Example
-
-```kotlin
-import net.lemoncookie.neko.markdown.Markdown
-import net.lemoncookie.neko.markdown.javafx.MarkdownRenderer
-
-// 获取 Markdown 模块
-val markdown = modLoader.getModule<Markdown>("markdown")
-
-// 解析 Markdown
-val html = markdown.parse("# Hello\n\n**World**! - [x] Task")
-
-// 创建渲染器并显示
-val renderer = MarkdownRenderer(markdown, modLoader)
-val scene = renderer.createScene(800.0, 600.0)
-
-// 切换深色主题
-renderer.setTheme("dark")
-
-// 导出为 HTML/PDF
-renderer.exportToHtml("output.html")
-renderer.exportToPdf("output.pdf")
-
-// 修改配置
-markdown.config.update(
-    syntaxHighlight = true,
-    mathSupport = true,
-    autoToc = true,
-    theme = MarkdownConfig.Theme.DARK
-)
 ```
 
 ### JAR 文件清单配置 | JAR Manifest Configuration

@@ -4,7 +4,6 @@ import net.lemoncookie.neko.modloader.core.ModCore;
 import net.lemoncookie.neko.modloader.api.IModAPI;
 import net.lemoncookie.neko.modloader.api.ModDependency;
 import net.lemoncookie.neko.modloader.lib.ModLibrary;
-import net.lemoncookie.neko.modloader.command.CommandSystem;
 import net.lemoncookie.neko.modloader.console.Console;
 import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 import net.lemoncookie.neko.modloader.lang.LanguageManager;
@@ -27,16 +26,14 @@ import net.lemoncookie.neko.modloader.api.KModAPI;
  */
 public class ModLoader {
 
-    private static final String VERSION = "2.0.0";
-    private static final String MIN_API_VERSION = "1.1.0";
-    private static final String GITHUB_VERSION = "v1.0.0";
+    private static final String VERSION = "3.0.0";
+    private static final String MIN_API_VERSION = "2.0.0";
 
     private final ModCore core;
     private final ModLibrary javaLibrary;
     private final List<IModAPI> javaMods;
     private final List<KModAPI> kotlinMods;
     private final Console console;
-    private final CommandSystem commandSystem;
     private final BroadcastManager broadcastManager;
     private final LanguageManager languageManager;
     private final BootFileManager bootFileManager;
@@ -56,7 +53,6 @@ public class ModLoader {
         this.languageManager = new LanguageManager();
         this.broadcastManager = new BroadcastManager(this);
         this.console = new Console(this);
-        this.commandSystem = new CommandSystem(this);
         this.bootFileManager = new BootFileManager(this);
         this.configManager = new ConfigManager(this);
         
@@ -108,6 +104,19 @@ public class ModLoader {
 
         // 注册日志监听器（只监听 Hub.Log 域，避免重复显示）
         broadcastManager.listen("Hub.Log", simpleLogger, "System", "SimpleLogger");
+
+        // 创建 Hub.Command 广播域（公开公共域）
+        int commandDomainResult = broadcastManager.addDomain(BroadcastManager.HUB_COMMAND, false, true, "system");
+        if (commandDomainResult == BroadcastManager.ERROR_SUCCESS) {
+            console.printSuccess(languageManager.getMessage("modloader.success.create_command_domain"));
+        } else if (commandDomainResult == BroadcastManager.ERROR_DOMAIN_EXISTS) {
+            // 域已存在，忽略
+        } else {
+            console.printError(languageManager.getMessage("modloader.error.create_command_domain", commandDomainResult));
+        }
+
+        // 注册内置命令监听器
+        registerBuiltinCommandListeners();
 
         long startTime = System.currentTimeMillis();
 
@@ -181,6 +190,24 @@ public class ModLoader {
     }
 
     /**
+     * 注册内置命令监听器
+     * 所有内置命令都监听 Hub.Command 广播域
+     */
+    private void registerBuiltinCommandListeners() {
+        // 注册命令监听器到 Hub.Command 域
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.SetCommand(this), "system", "SetCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.HelpCommand(this), "system", "HelpCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ClearCommand(this), "system", "ClearCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.LoadCommand(this), "system", "LoadCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.UnloadCommand(this), "system", "UnloadCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ListCommand(this), "system", "ListCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ExitCommand(this), "system", "ExitCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.SayCommand(this), "system", "SayCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ListenCommand(this), "system", "ListenCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.AutobootCommand(this), "system", "AutobootCommand");
+    }
+
+    /**
      * 注册 Java 模组
      */
     public void registerJavaMod(IModAPI mod) {
@@ -231,14 +258,6 @@ public class ModLoader {
             String errorMsg = "Error loading mod '" + name + "': " + e.getMessage();
             console.printError(errorMsg);
             broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
-        }
-        
-        try {
-            mod.registerCommands(this, modId);
-        } catch (Throwable e) {
-            String errorMsg = "Error registering commands for mod '" + name + "': " + e.getMessage();
-            console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
         }
         
         try {
@@ -371,14 +390,6 @@ public class ModLoader {
         }
         
         try {
-            mod.registerCommands(this, mod.getModId());
-        } catch (Throwable e) {
-            String errorMsg = "Error registering commands for mod '" + mod.getName() + "': " + e.getMessage();
-            console.printWarning(errorMsg);
-            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
-        }
-        
-        try {
             mod.registerBroadcastListeners(this, mod.getModId());
         } catch (Throwable e) {
             String errorMsg = "Error registering broadcast listeners for mod '" + mod.getName() + "': " + e.getMessage();
@@ -484,13 +495,6 @@ public class ModLoader {
     }
 
     /**
-     * 获取命令系统实例
-     */
-    public CommandSystem getCommandSystem() {
-        return commandSystem;
-    }
-
-    /**
      * 获取广播域管理器
      */
     public BroadcastManager getBroadcastManager() {
@@ -530,13 +534,6 @@ public class ModLoader {
      */
     public static String getMinApiVersion() {
         return MIN_API_VERSION;
-    }
-
-    /**
-     * 获取 GitHub 版本
-     */
-    public static String getGithubVersion() {
-        return GITHUB_VERSION;
     }
 
     /**

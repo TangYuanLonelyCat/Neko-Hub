@@ -19,6 +19,7 @@ public class BroadcastManager {
     public static final String HUB_ALL = "Hub.ALL";
     public static final String HUB_SYSTEM = "Hub.System";
     public static final String HUB_CONSOLE = "Hub.Console";
+    public static final String HUB_COMMAND = "Hub.Command";  // 命令域
     public static final String HUB_LOG = "Hub.Log";  // 日志专用域（公开公共域）
 
     // 错误码

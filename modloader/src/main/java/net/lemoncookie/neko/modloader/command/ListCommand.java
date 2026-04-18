@@ -8,25 +8,28 @@ import java.util.List;
 
 /**
  * 列出已注册模组命令
+ * 监听 Hub.Command 广播域
  */
-public class ListCommand implements Command {
-
+public class ListCommand extends BaseCommandListener {
+    
     private static final int MODS_PER_PAGE = 10;
-
+    
+    public ListCommand(ModLoader modLoader) {
+        super(modLoader, "list");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
         try {
-            String[] parts = args.trim().split("\\s+");
-            String targetType = "mod"; // 默认显示模组列表
+            String targetType = "mod";
             int page = 1;
             
-            // 解析参数
-            if (parts.length >= 1 && !parts[0].isEmpty()) {
-                targetType = parts[0].toLowerCase();
+            if (commandMessage.getPartCount() >= 1) {
+                targetType = commandMessage.getPart(0).toLowerCase();
             }
-            if (parts.length >= 2) {
+            if (commandMessage.getPartCount() >= 2) {
                 try {
-                    page = Integer.parseInt(parts[1]);
+                    page = Integer.parseInt(commandMessage.getPart(1));
                     if (page < 1) page = 1;
                 } catch (NumberFormatException e) {
                     page = 1;
@@ -44,13 +47,9 @@ public class ListCommand implements Command {
         }
     }
     
-    /**
-     * 列出所有已注册的模组
-     */
     private void listMods(ModLoader modLoader, int page) {
         List<IModAPI> allMods = new ArrayList<>();
         allMods.addAll(modLoader.getJavaMods());
-        // 如果需要也可以添加 Kotlin 模组
         
         int totalMods = allMods.size();
         int totalPages = (int) Math.ceil((double) totalMods / MODS_PER_PAGE);
@@ -79,15 +78,5 @@ public class ListCommand implements Command {
         modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.info.total_loaded", totalMods));
         modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.info.use_list"));
         modLoader.getConsole().printLine("═══════════════════════════════════════");
-    }
-
-    @Override
-    public String getDescription() {
-        return "List loaded mods or commands";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/list mod [page]";
     }
 }

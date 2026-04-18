@@ -39,17 +39,6 @@ interface KModAPI {
     fun onUnload()
 
     /**
-     * 注册命令
-     * 子类可以覆盖此方法注册命令
-     * @param modLoader ModLoader 实例
-     * @param modId 当前模组的 ID（自动传入）
-     */
-    fun registerCommands(modLoader: ModLoader, modId: String) {
-        // 默认实现为空
-        // 使用 modLoader.getCommandSystem().registerCommand("命令名", modId, 你的命令类 ()) 来注册命令
-    }
-
-    /**
      * 监听广播域
      * 子类可以覆盖此方法注册广播域监听器
      */

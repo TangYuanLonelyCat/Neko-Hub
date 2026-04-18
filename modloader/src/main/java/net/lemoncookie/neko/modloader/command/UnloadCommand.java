@@ -4,49 +4,45 @@ import net.lemoncookie.neko.modloader.ModLoader;
 
 /**
  * 卸载模组命令
- * 通过模组名称卸载
+ * 监听 Hub.Command 广播域
  */
-public class UnloadCommand implements Command {
-
+public class UnloadCommand extends BaseCommandListener {
+    
+    public UnloadCommand(ModLoader modLoader) {
+        super(modLoader, "unload");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
-        if (args.isEmpty()) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
+        if (commandMessage.getPartCount() == 0) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/unload [模组名称]")
             );
             return;
         }
 
+        // 获取模组名称参数
+        String modName = commandMessage.getPart(0);
+        
         // 移除可能的引号
-        args = args.trim();
-        if ((args.startsWith("\"") && args.endsWith("\"")) || 
-            (args.startsWith("'") && args.endsWith("'"))) {
-            args = args.substring(1, args.length() - 1);
+        modName = modName.trim();
+        if ((modName.startsWith("\"") && modName.endsWith("\"")) || 
+            (modName.startsWith("'") && modName.endsWith("'"))) {
+            modName = modName.substring(1, modName.length() - 1);
         }
 
         // 移除.jar 后缀（如果用户输入了）
-        if (args.endsWith(".jar")) {
-            args = args.substring(0, args.length() - 4);
+        if (modName.endsWith(".jar")) {
+            modName = modName.substring(0, modName.length() - 4);
         }
 
         try {
             // 卸载模组
-            modLoader.unloadMod(args);
+            modLoader.unloadMod(modName);
         } catch (Throwable e) {
             String errorMsg = modLoader.getLanguageManager().getMessage("command.unload.error.failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
-            // 通过广播域发送错误消息
             modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "UnloadCommand");
         }
-    }
-
-    @Override
-    public String getDescription() {
-        return "卸载模组（通过模组名称）";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/unload [模组名称]";
     }
 }

@@ -22,13 +22,6 @@ include(":utils")
 // Modloader module (包含 lib, api, core 包)
 include(":modloader")
 
-// Feature modules
-include(":bookkeeping")
-include(":markdown")
-include(":filelabel")
-include(":calendar")
-include(":todolist")
-
 // Test modules
 include(":testmod-a")
 include(":testmod-b")
