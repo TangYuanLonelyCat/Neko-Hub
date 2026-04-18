@@ -199,25 +199,39 @@ public class ConsoleMod implements IModAPI {
 
 #### 命令系统 (`net.lemoncookie.neko.modloader.command`)
 
-命令系统负责解析和执行命令，支持内置命令和自定义命令。
+**重要变更（v3.0.0）**：
+- 命令系统已重构，不再使用命令注册机制
+- 所有命令改为监听 `Hub.Command` 广播域
+- 用户输入 `/` 开头的命令时，会序列化为 JSON 发送到 `Hub.Command` 域
+- 模组可以通过监听 `Hub.Command` 域来实现自定义命令
+
+**命令消息格式**：
+```json
+{
+    "command": "命令名",
+    "parts": ["参数 1", "参数 2", ...],
+    "sender": "发送者 ID"
+}
+```
 
 ```java
-// 命令系统
-public class CommandSystem {
-    // 构造函数
-    public CommandSystem(ModLoader modLoader)
-    
-    // 命令管理
-    public void registerCommand(String name, Command command)
-    public void executeCommand(String input)
-    public Map<String, Command> getCommands()
+// 命令消息类
+public class CommandMessage {
+    public CommandMessage(String command, String[] parts, String senderModId)
+    public static CommandMessage fromJson(String json)
+    public String toJson()
+    public String getCommand()
+    public String[] getParts()
+    public int getPartCount()
+    public String getPart(int index)
+    public String getSenderModId()
+    public String getPartsAsString()
 }
 
-// 命令接口
-public interface Command {
-    void execute(ModLoader modLoader, String args) throws Exception;
-    String getDescription();
-    String getUsage();
+// 命令监听器基类
+public abstract class BaseCommandListener implements MessageListener {
+    public BaseCommandListener(ModLoader modLoader, String commandName)
+    protected abstract void execute(CommandMessage commandMessage, String senderModId)
 }
 ```
 
@@ -226,57 +240,55 @@ public interface Command {
 - `/clear` - 清空控制台
 - `/load [模组文件名]` - 加载模组（通过文件名，会自动添加.jar 后缀）
 - `/unload [模组名称]` - 卸载模组（通过模组名称/ID）
-- `/set modPermission [模组名] [level 值]` - 设置模组权限（level 0-3）
+- `/set modpermission [模组名] [level 值]` - 设置模组权限（level 0-3）
 - `/set bootfile [文件名]` - 设置 boot 文件名
+- `/set language [en/zh]` - 切换语言
 - `/autoboot` - 扫描 mods 文件夹并生成 auto.boot 文件
 - `/exit` - 优雅地关闭 Neko-Hub
 - `/say [域名] "消息内容"` - 向特定广播域发送消息
 - `/listen [域名] [start|stop]` - 监听/取消监听特定广播域
+- `/list mod [页码]` - 列出已加载的模组
 
 **非命令输入：**
-- 不带 `/` 的输入会直接发送到 `Hub.ALL` 广播域
+- 不带 `/` 的输入会直接发送到 `Hub.Console` 广播域
 
 **模组自定义命令：**
 
-模组可以在 `registerCommands` 方法中注册自己的命令：
+模组可以通过监听 `Hub.Command` 广播域来实现自定义命令：
 
 ```java
 // Java 模组示例
 @Override
-public void registerCommands(ModLoader modLoader) {
-    modLoader.getCommandSystem().registerCommand("mycommand", new Command() {
-        @Override
-        public void execute(ModLoader modLoader, String args) {
-            // 命令执行逻辑
-            modLoader.getConsole().printLine("Hello from my command!");
-        }
-        
-        @Override
-        public String getDescription() {
-            return "我的自定义命令";
-        }
-        
-        @Override
-        public String getUsage() {
-            return "/mycommand";
-        }
-    });
+public void registerBroadcastListeners(ModLoader modLoader, String modId) {
+    modLoader.getBroadcastManager().listen(
+        BroadcastManager.HUB_COMMAND, 
+        new BaseCommandListener(modLoader, "mycommand") {
+            @Override
+            protected void execute(CommandMessage commandMessage, String senderModId) {
+                // 命令执行逻辑
+                modLoader.getConsole().printLine("Hello from my command! Args: " + commandMessage.getPartsAsString());
+            }
+        }, 
+        modId, 
+        "MyMod"
+    );
 }
 ```
 
 ```kotlin
 // Kotlin 模组示例
-override fun registerCommands(modLoader: ModLoader) {
-    modLoader.commandSystem.registerCommand("mycommand", object : Command {
-        override fun execute(modLoader: ModLoader, args: String) {
-            // 命令执行逻辑
-            modLoader.console.printLine("Hello from my command!")
-        }
-        
-        override fun getDescription() = "我的自定义命令"
-        
-        override fun getUsage() = "/mycommand"
-    })
+override fun registerBroadcastListeners(modLoader: ModLoader, modId: String) {
+    modLoader.broadcastManager.listen(
+        BroadcastManager.HUB_COMMAND,
+        object : BaseCommandListener(modLoader, "mycommand") {
+            override fun execute(commandMessage: CommandMessage, senderModId: String) {
+                // 命令执行逻辑
+                modLoader.console.printLine("Hello from my command! Args: ${commandMessage.partsAsString}")
+            }
+        },
+        modId,
+        "MyMod"
+    )
 }
 ```
 
@@ -383,17 +395,16 @@ public interface IModAPI {
     String getModId();
     String getVersion();
     String getPackageName();
-    void onLoad(ModLoader modLoader, String modId);
+    void onLoad(ModLoader modLoader);
     void onUnload();
-    default void registerCommands(ModLoader modLoader, String modId) {}
     default void registerBroadcastListeners(ModLoader modLoader, String modId) {}
 }
 ```
 
-**重要变更（v1.1.0）**：
-- `registerCommands` 和 `registerBroadcastListeners` 方法现在接收 `modId` 参数（自动传入）
-- 命令注册需要使用：`modLoader.getCommandSystem().registerCommand("命令名", modId, command, allowOverride)`
-- 支持多模组注册同一命令，通过 `--模组名` 后缀指定执行来源
+**重要变更（v3.0.0）**：
+- 删除了 `registerCommands` 方法，命令系统改为基于广播域
+- 模组通过监听 `Hub.Command` 广播域来实现自定义命令
+- `onLoad` 方法不再接收 `modId` 参数
 
 **使用 ModAPI 工具类**：
 ```java

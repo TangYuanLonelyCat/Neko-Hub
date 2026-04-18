@@ -13,33 +13,40 @@ import java.lang.reflect.Constructor;
 
 /**
  * 加载模组命令
- * 支持包名和文件名加载（不支持路径）
+ * 监听 Hub.Command 广播域
  */
-public class LoadCommand implements Command {
-
+public class LoadCommand extends BaseCommandListener {
+    
+    public LoadCommand(ModLoader modLoader) {
+        super(modLoader, "load");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
-        if (args.isEmpty()) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
+        if (commandMessage.getPartCount() == 0) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/load [模组文件名]")
             );
             return;
         }
 
+        // 获取文件名参数
+        String fileName = commandMessage.getPart(0);
+        
         // 移除可能的引号
-        args = args.trim();
-        if ((args.startsWith("\"") && args.endsWith("\"")) || 
-            (args.startsWith("'") && args.endsWith("'"))) {
-            args = args.substring(1, args.length() - 1);
+        fileName = fileName.trim();
+        if ((fileName.startsWith("\"") && fileName.endsWith("\"")) || 
+            (fileName.startsWith("'") && fileName.endsWith("'"))) {
+            fileName = fileName.substring(1, fileName.length() - 1);
         }
 
         // 确保文件名以.jar 结尾
-        if (!args.endsWith(".jar")) {
-            args = args + ".jar";
+        if (!fileName.endsWith(".jar")) {
+            fileName = fileName + ".jar";
         }
 
         // 文件名加载
-        loadModByFileName(modLoader, args);
+        loadModByFileName(modLoader, fileName);
     }
 
     /**
@@ -73,7 +80,6 @@ public class LoadCommand implements Command {
         } catch (Exception e) {
             String errorMsg = modLoader.getLanguageManager().getMessage("command.load.error.load_failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
-            // 通过广播域发送错误消息
             modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "LoadCommand");
         }
     }
@@ -145,15 +151,5 @@ public class LoadCommand implements Command {
         if (modInstance != null) {
             // 成功消息由 registerJavaMod 统一处理
         }
-    }
-
-    @Override
-    public String getDescription() {
-        return "加载模组（通过文件名）";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/load [模组文件名]";
     }
 }

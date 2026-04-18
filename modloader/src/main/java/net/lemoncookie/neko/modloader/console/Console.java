@@ -160,8 +160,91 @@ public class Console {
             return;
         }
         
-        // 交给命令系统处理
-        modLoader.getCommandSystem().executeCommand(input);
+        // 检查是否是命令（以 '/' 开头）
+        if (input.startsWith("/")) {
+            // 解析命令并发送到 Hub.Command 广播域
+            sendCommand(input.substring(1));
+        } else {
+            // 普通消息发送到 Hub.Console
+            modLoader.getBroadcastManager().broadcast("Hub.Console", input, "Console");
+        }
+    }
+    
+    /**
+     * 解析命令并发送到 Hub.Command 广播域（包级访问，供 BootFileManager 使用）
+     * 格式：/command part1 part2 part3 ...
+     * 发送到 Hub.Command 的 JSON:
+     * {
+     *     "command": "command",
+     *     "parts": ["part1", "part2", "part3"],
+     *     "sender": "Console"
+     * }
+     */
+    void handleCommand(String commandInput) {
+        sendCommand(commandInput);
+    }
+    
+    /**
+     * 解析命令并发送到 Hub.Command 广播域
+     */
+    private void sendCommand(String commandInput) {
+        String[] tokens = parseCommandTokens(commandInput);
+        if (tokens.length == 0) {
+            return;
+        }
+        
+        String commandName = tokens[0];
+        String[] parts = tokens.length > 1 ? 
+            java.util.Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
+        
+        // 创建命令消息
+        net.lemoncookie.neko.modloader.command.CommandMessage commandMessage = 
+            new net.lemoncookie.neko.modloader.command.CommandMessage(commandName, parts, "Console");
+        
+        // 发送到 Hub.Command 广播域
+        int result = modLoader.getBroadcastManager().broadcast(
+            net.lemoncookie.neko.modloader.broadcast.BroadcastManager.HUB_COMMAND,
+            commandMessage.toJson(),
+            "Console"
+        );
+        
+        if (result != net.lemoncookie.neko.modloader.broadcast.BroadcastManager.ERROR_SUCCESS) {
+            printError("Failed to send command to Hub.Command: Error " + result);
+        }
+    }
+    
+    /**
+     * 解析命令令牌（支持引号参数）
+     */
+    private String[] parseCommandTokens(String input) {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        char quoteChar = 0;
+        
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            
+            if (!inQuotes && (c == '"' || c == '\'')) {
+                inQuotes = true;
+                quoteChar = c;
+            } else if (inQuotes && c == quoteChar) {
+                inQuotes = false;
+            } else if (!inQuotes && Character.isWhitespace(c)) {
+                if (current.length() > 0) {
+                    result.add(current.toString());
+                    current.setLength(0);
+                }
+            } else {
+                current.append(c);
+            }
+        }
+        
+        if (current.length() > 0) {
+            result.add(current.toString());
+        }
+        
+        return result.toArray(new String[0]);
     }
 
     /**

@@ -4,27 +4,20 @@ import net.lemoncookie.neko.modloader.ModLoader;
 
 /**
  * 自动启动命令
- * 扫描 mods 文件夹并生成 auto.boot 文件
+ * 监听 Hub.Command 广播域
  */
-public class AutobootCommand implements Command {
-
+public class AutobootCommand extends BaseCommandListener {
+    
+    public AutobootCommand(ModLoader modLoader) {
+        super(modLoader, "autoboot");
+    }
+    
     @Override
-    public void execute(ModLoader modLoader, String args) {
+    protected void execute(CommandMessage commandMessage, String senderModId) {
         try {
-            // 生成 auto.boot 文件
             modLoader.getBootFileManager().generateAutoBoot();
         } catch (Throwable e) {
             modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
         }
-    }
-
-    @Override
-    public String getDescription() {
-        return "扫描 mods 文件夹并生成 auto.boot 文件";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/autoboot";
     }
 }

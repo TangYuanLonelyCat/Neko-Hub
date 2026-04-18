@@ -3,7 +3,9 @@ package net.lemoncookie.neko.modloader.testmod.a;
 import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.api.IModAPI;
 import net.lemoncookie.neko.modloader.api.ModDependency;
-import net.lemoncookie.neko.modloader.command.Command;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
+import net.lemoncookie.neko.modloader.command.BaseCommandListener;
+import net.lemoncookie.neko.modloader.command.CommandMessage;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +24,7 @@ public class TestModA implements IModAPI {
     
     @Override
     public String getVersion() {
-        return "1.1.0";
+        return "2.0.0";
     }
     
     @Override
@@ -32,8 +34,7 @@ public class TestModA implements IModAPI {
     
     @Override
     public List<ModDependency> getDependencies() {
-        // 依赖 TestModB 1.0.0 或更高版本
-        return Collections.singletonList(new ModDependency("TestModB", "1.0.0"));
+        return Collections.emptyList();
     }
     
     @Override
@@ -54,52 +55,38 @@ public class TestModA implements IModAPI {
     }
     
     @Override
-    public void registerCommands(ModLoader modLoader, String modId) {
-        // 注册 /test 命令
-        modLoader.getCommandSystem().registerCommand("test", modId, new Command() {
-            @Override
-            public void execute(ModLoader modLoader, String args) {
-                // 第一步：返回 OK
-                modLoader.getConsole().printLine("OK");
-                modLoader.getBroadcastManager().broadcast("Hub.Log", "OK", modId);
-                
-                // 第二步：尝试调用 TestModB 的函数
-                try {
-                    Object testModB = getTestModB(modLoader);
-                    if (testModB != null) {
-                        // 使用反射调用 doComplete 方法，避免编译时依赖
-                        java.lang.reflect.Method method = testModB.getClass().getMethod("doComplete");
-                        String result = (String) method.invoke(testModB);
-                        modLoader.getConsole().printLine(result);
-                        modLoader.getBroadcastManager().broadcast("Hub.Log", result, modId);
-                    } else {
-                        modLoader.getConsole().printWarning("TestModB not found");
-                        modLoader.getBroadcastManager().broadcast("Hub.Log", "TestModB not found", modId);
+    public void registerBroadcastListeners(ModLoader modLoader, String modId) {
+        modLoader.getBroadcastManager().listen(
+            BroadcastManager.HUB_COMMAND,
+            new BaseCommandListener(modLoader, "test") {
+                @Override
+                protected void execute(CommandMessage commandMessage, String senderModId) {
+                    modLoader.getConsole().printLine("OK");
+                    modLoader.getBroadcastManager().broadcast("Hub.Log", "OK", modId);
+                    
+                    try {
+                        Object testModB = getTestModB(modLoader);
+                        if (testModB != null) {
+                            java.lang.reflect.Method method = testModB.getClass().getMethod("doComplete");
+                            String result = (String) method.invoke(testModB);
+                            modLoader.getConsole().printLine(result);
+                            modLoader.getBroadcastManager().broadcast("Hub.Log", result, modId);
+                        } else {
+                            modLoader.getConsole().printWarning("TestModB not found");
+                            modLoader.getBroadcastManager().broadcast("Hub.Log", "TestModB not found", modId);
+                        }
+                    } catch (Throwable e) {
+                        modLoader.getConsole().printError("Error calling TestModB: " + e.getMessage());
+                        modLoader.getBroadcastManager().broadcast("Hub.Log", "Error calling TestModB: " + e.getMessage(), modId);
                     }
-                } catch (Throwable e) {
-                    modLoader.getConsole().printError("Error calling TestModB: " + e.getMessage());
-                    modLoader.getBroadcastManager().broadcast("Hub.Log", "Error calling TestModB: " + e.getMessage(), modId);
                 }
-            }
-            
-            @Override
-            public String getDescription() {
-                return "Test command for inter-mod communication";
-            }
-            
-            @Override
-            public String getUsage() {
-                return "/test";
-            }
-        }, false); // 不允许覆盖
+            },
+            modId,
+            "TestModA"
+        );
     }
     
-    /**
-     * 获取 TestModB 实例
-     */
     private Object getTestModB(ModLoader modLoader) {
-        // 通过反射或其他方式获取 TestModB 实例
-        // 这里简化处理，假设 TestModB 已经注册到 ModLoader
         for (IModAPI mod : modLoader.getJavaMods()) {
             if (mod.getModId().equals("TestModB")) {
                 return mod;
