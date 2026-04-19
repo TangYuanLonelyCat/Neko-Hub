@@ -73,7 +73,14 @@ public class VersionComparator {
     
     /**
      * 检查版本是否在可接受范围内
-     * 允许一定程度的版本差距（主要用于 API 版本兼容性检查）
+     * 用于 API 版本兼容性检查
+     * 
+     * 规则：
+     * 1. 模组 API 版本高于 ModLoader API 版本 → 拒绝（不兼容）
+     *    原因：模组基于不存在的 API 版本开发
+     * 2. 模组 API 版本低于 ModLoader API 版本最多 1 个 Minor → 警告（兼容）
+     *    例如：ModLoader 是 2.1.0，模组是 2.0.x 可以接受
+     * 3. 模组 API 版本等于或略低于（同 Minor）→ 完全兼容
      * 
      * @param currentVersion 当前模组的 API 版本
      * @param requiredMinVersion ModLoader 要求的最低 API 版本
@@ -82,24 +89,55 @@ public class VersionComparator {
     public static int checkCompatibilityLevel(String currentVersion, String requiredMinVersion) {
         int comparison = compare(currentVersion, requiredMinVersion);
         
-        if (comparison >= 0) {
+        // 模组 API 版本高于 ModLoader API 版本 → 拒绝
+        if (comparison > 0) {
+            return 2; // 不兼容
+        }
+        
+        // 模组 API 版本等于 ModLoader API 版本 → 完全兼容
+        if (comparison == 0) {
             return 0;
         }
         
+        // 模组 API 版本低于 ModLoader API 版本，检查差距
         String[] currentParts = currentVersion.replaceAll("^[vV]", "").trim().split("[.-]");
         String[] requiredParts = requiredMinVersion.replaceAll("^[vV]", "").trim().split("[.-]");
         
         int currentMajor = (currentParts.length > 0) ? parseVersionPart(currentParts[0]) : 0;
+        int currentMinor = (currentParts.length > 1) ? parseVersionPart(currentParts[1]) : 0;
+        
         int requiredMajor = (requiredParts.length > 0) ? parseVersionPart(requiredParts[0]) : 0;
+        int requiredMinor = (requiredParts.length > 1) ? parseVersionPart(requiredParts[1]) : 0;
         
-        if (currentMajor == requiredMajor) {
+        // Major 版本不同 → 不兼容
+        if (currentMajor != requiredMajor) {
+            return 2;
+        }
+        
+        // Major 相同，检查 Minor 差距
+        int minorDiff = requiredMinor - currentMinor;
+        
+        // Minor 差距超过 1 → 不兼容
+        if (minorDiff > 1) {
+            return 2;
+        }
+        
+        // Minor 差距为 1 → 警告（兼容但需要警告）
+        if (minorDiff == 1) {
             return 1;
         }
         
-        if (currentMajor > 0 && currentMajor == requiredMajor - 1) {
-            return 1;
-        }
-        
-        return 2;
+        // Minor 相同（Patch 不同）→ 完全兼容
+        return 0;
+    }
+    
+    /**
+     * 检查 API 版本是否过高
+     * @param modApiVersion 模组 API 版本
+     * @param minApiVersion 模组加载器最低 API 版本
+     * @return true 表示模组 API 版本过高，false 表示正常或偏低
+     */
+    public static boolean isApiVersionTooHigh(String modApiVersion, String minApiVersion) {
+        return compare(modApiVersion, minApiVersion) > 0;
     }
 }

@@ -6,10 +6,11 @@ import net.lemoncookie.neko.modloader.api.ModDependency;
 import net.lemoncookie.neko.modloader.lib.ModLibrary;
 import net.lemoncookie.neko.modloader.console.Console;
 import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
+import net.lemoncookie.neko.modloader.broadcast.ModPermission;
 import net.lemoncookie.neko.modloader.lang.LanguageManager;
 import net.lemoncookie.neko.modloader.boot.BootFileManager;
-import net.lemoncookie.neko.modloader.config.ConfigManager;
 import net.lemoncookie.neko.modloader.consolemod.ConsoleMod;
+import net.lemoncookie.neko.modloader.systemmod.SystemMod;
 import net.lemoncookie.neko.modloader.util.VersionComparator;
 import net.lemoncookie.neko.modloader.logging.SimpleLogger;
 
@@ -26,8 +27,8 @@ import net.lemoncookie.neko.modloader.api.KModAPI;
  */
 public class ModLoader {
 
-    private static final String VERSION = "3.0.0";
-    private static final String MIN_API_VERSION = "2.0.0";
+    private static final String VERSION = "3.2.3";
+    private static final String MIN_API_VERSION = "2.3.0";
 
     private final ModCore core;
     private final ModLibrary javaLibrary;
@@ -37,7 +38,6 @@ public class ModLoader {
     private final BroadcastManager broadcastManager;
     private final LanguageManager languageManager;
     private final BootFileManager bootFileManager;
-    private final ConfigManager configManager;
     private final SimpleLogger simpleLogger;
 
     private boolean initialized = false;
@@ -54,7 +54,6 @@ public class ModLoader {
         this.broadcastManager = new BroadcastManager(this);
         this.console = new Console(this);
         this.bootFileManager = new BootFileManager(this);
-        this.configManager = new ConfigManager(this);
         
         // 自动创建 mods 文件夹
         createModsFolder();
@@ -115,13 +114,16 @@ public class ModLoader {
             console.printError(languageManager.getMessage("modloader.error.create_command_domain", commandDomainResult));
         }
 
+        // 加载系统模组（优先加载）
+        loadSystemMod();
+
+        // 加载控制台模组（优先加载）
+        loadConsoleMod();
+
         // 注册内置命令监听器
         registerBuiltinCommandListeners();
 
         long startTime = System.currentTimeMillis();
-
-        // 加载控制台模组（优先加载）
-        loadConsoleMod();
 
         core.start();
         initialized = true;
@@ -147,7 +149,7 @@ public class ModLoader {
      * 加载 boot 文件
      */
     private void loadBootFile() {
-        String bootFileName = configManager.getBootFile();
+        String bootFileName = "auto.boot";
         File bootFile = new File(bootFileName);
         
         // 检查是否是默认 boot 文件（auto.boot）
@@ -181,6 +183,15 @@ public class ModLoader {
     }
 
     /**
+     * 加载系统模组（优先加载）
+     */
+    private void loadSystemMod() {
+        // 创建并加载系统模组
+        SystemMod systemMod = new SystemMod();
+        registerJavaMod(systemMod);
+    }
+
+    /**
      * 加载控制台模组（优先加载）
      */
     private void loadConsoleMod() {
@@ -195,16 +206,17 @@ public class ModLoader {
      */
     private void registerBuiltinCommandListeners() {
         // 注册命令监听器到 Hub.Command 域
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.SetCommand(this), "system", "SetCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.HelpCommand(this), "system", "HelpCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ClearCommand(this), "system", "ClearCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.LoadCommand(this), "system", "LoadCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.UnloadCommand(this), "system", "UnloadCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ListCommand(this), "system", "ListCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ExitCommand(this), "system", "ExitCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.SayCommand(this), "system", "SayCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.ListenCommand(this), "system", "ListenCommand");
-        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new command.AutobootCommand(this), "system", "AutobootCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.SetCommand(this), "system", "SetCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.ChangeCommand(this), "system", "ChangeCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.HelpCommand(this), "system", "HelpCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.ClearCommand(this), "system", "ClearCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.LoadCommand(this), "system", "LoadCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.UnloadCommand(this), "system", "UnloadCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.ListCommand(this), "system", "ListCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.ExitCommand(this), "system", "ExitCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.SayCommand(this), "system", "SayCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.ListenCommand(this), "system", "ListenCommand");
+        broadcastManager.listen(BroadcastManager.HUB_COMMAND, new net.lemoncookie.neko.modloader.command.AutobootCommand(this), "system", "AutobootCommand");
     }
 
     /**
@@ -234,20 +246,52 @@ public class ModLoader {
             return;
         }
         
-        int compatibilityLevel = checkApiVersionCompatibility(version);
+        // 检查模组是否显式声明了 API 版本（防止旧模组未实现 getApiVersion()）
+        String apiVersion = mod.getApiVersion();
+        if (apiVersion == null || apiVersion.trim().isEmpty()) {
+            console.printError(languageManager.getMessage("modloader.error.api_version_not_declared", name));
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + languageManager.getMessage("modloader.error.api_version_not_declared", name), "ModLoader");
+            return;
+        }
+        
+        // 检查 API 版本是否与模组版本相同（如果是，说明可能没有显式实现 getApiVersion()，使用的是默认实现）
+        if (apiVersion.equals(version)) {
+            console.printWarning(languageManager.getMessage("modloader.warning.api_version_equals_mod_version", name));
+        }
+        
+        // 检查模组 ID 是否已存在（禁止同名模组）
+        for (IModAPI loadedMod : javaMods) {
+            if (loadedMod != null && loadedMod.getModId() != null && loadedMod.getModId().equals(modId)) {
+                console.printError("Mod ID already exists: " + modId);
+                broadcastManager.broadcast("Hub.Log", "[ERROR] Duplicate mod ID: " + modId, "ModLoader");
+                return;
+            }
+        }
+        
+        // 检查 API 版本兼容性
+        int compatibilityLevel = checkApiVersionCompatibility(apiVersion);
         
         if (compatibilityLevel == 2) {
-            console.printError(languageManager.getMessage("modloader.error.api_version", name));
+            // 检查是版本过高还是过低
+            if (VersionComparator.isApiVersionTooHigh(mod.getApiVersion(), MIN_API_VERSION)) {
+                console.printError(languageManager.getMessage("modloader.error.api_version_too_high", name));
+            } else {
+                console.printError(languageManager.getMessage("modloader.error.api_version_too_low", name));
+            }
             return;
         }
         
         if (compatibilityLevel == 1) {
             console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
-                name, version, MIN_API_VERSION));
+                name, mod.getApiVersion(), MIN_API_VERSION));
         }
 
-        if (!checkDependencies(mod)) {
-            return;
+        // 注册模组，设置权限
+        // SystemMod 和 ConsoleMod 需要 SUPER_ADMIN 权限，其他模组默认为 NORMAL_COMPONENT
+        if ("system".equals(modId) || "console-mod".equals(modId)) {
+            broadcastManager.getPermissionManager().setModPermission(modId, ModPermission.SUPER_ADMIN);
+        } else {
+            broadcastManager.getPermissionManager().setModPermission(modId, ModPermission.NORMAL_COMPONENT);
         }
 
         javaMods.add(mod);
@@ -280,18 +324,68 @@ public class ModLoader {
      * @return 依赖是否满足
      */
     private boolean checkDependencies(IModAPI mod) {
-        List<ModDependency> dependencies = mod.getDependencies();
+        if (mod == null) {
+            return false;
+        }
+        
+        List<ModDependency> dependencies;
+        try {
+            dependencies = mod.getDependencies();
+            if (dependencies == null) {
+                return true; // 返回 null 视为无依赖
+            }
+        } catch (Throwable e) {
+            String errorMsg = "Error getting dependencies from mod '" + mod.getName() + "': " + e.getMessage();
+            console.printError(errorMsg);
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+            return false;
+        }
         
         if (dependencies.isEmpty()) {
             return true; // 无依赖，直接通过
         }
         
         for (ModDependency dependency : dependencies) {
-            String requiredModId = dependency.getModId();
-            String requiredVersion = dependency.getMinVersion();
+            if (dependency == null) {
+                continue; // 跳过 null 依赖项
+            }
+            
+            String requiredModId;
+            String requiredVersion;
+            try {
+                requiredModId = dependency.getModId();
+                requiredVersion = dependency.getMinVersion();
+                
+                if (requiredModId == null || requiredModId.trim().isEmpty()) {
+                    String errorMsg = "Mod dependency has null or empty modId: " + mod.getName();
+                    console.printWarning(errorMsg);
+                    broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
+                    continue;
+                }
+                
+                if (requiredVersion == null || requiredVersion.trim().isEmpty()) {
+                    String errorMsg = "Mod dependency has null or empty version: " + requiredModId;
+                    console.printWarning(errorMsg);
+                    broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
+                    continue;
+                }
+            } catch (Throwable e) {
+                String errorMsg = "Error reading dependency from mod '" + mod.getName() + "': " + e.getMessage();
+                console.printWarning(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
+                continue;
+            }
             
             // 检查依赖模组是否已加载
-            IModAPI loadedMod = getLoadedMod(requiredModId);
+            IModAPI loadedMod;
+            try {
+                loadedMod = getLoadedMod(requiredModId);
+            } catch (Throwable e) {
+                String errorMsg = "Error checking dependency '" + requiredModId + "' for mod '" + mod.getName() + "': " + e.getMessage();
+                console.printError(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                return false;
+            }
             
             if (loadedMod == null) {
                 // 依赖模组未加载
@@ -307,14 +401,21 @@ public class ModLoader {
             }
             
             // 检查依赖模组版本
-            if (VersionComparator.compare(loadedMod.getVersion(), requiredVersion) < 0) {
-                String errorMsg = String.format(
-                    "模组 [%s] 所需的依赖 [%s-%s] 版本过低（当前版本：%s）",
-                    mod.getModId(),
-                    requiredModId,
-                    requiredVersion,
-                    loadedMod.getVersion()
-                );
+            try {
+                if (VersionComparator.compare(loadedMod.getVersion(), requiredVersion) < 0) {
+                    String errorMsg = String.format(
+                        "模组 [%s] 所需的依赖 [%s-%s] 版本过低（当前版本：%s）",
+                        mod.getModId(),
+                        requiredModId,
+                        requiredVersion,
+                        loadedMod.getVersion()
+                    );
+                    console.printError(errorMsg);
+                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                    return false;
+                }
+            } catch (Throwable e) {
+                String errorMsg = "Error comparing versions for dependency '" + requiredModId + "': " + e.getMessage();
                 console.printError(errorMsg);
                 broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
                 return false;
@@ -331,12 +432,35 @@ public class ModLoader {
      * @return 模组实例，未找到返回 null
      */
     private IModAPI getLoadedMod(String modId) {
-        for (IModAPI loadedMod : javaMods) {
-            String currentModId = loadedMod.getModId();
-            if (currentModId != null && currentModId.equals(modId)) {
-                return loadedMod;
-            }
+        if (modId == null || modId.trim().isEmpty()) {
+            return null;
         }
+        
+        try {
+            for (IModAPI loadedMod : javaMods) {
+                if (loadedMod == null) {
+                    continue;
+                }
+                
+                String currentModId;
+                try {
+                    currentModId = loadedMod.getModId();
+                } catch (Throwable e) {
+                    // 忽略获取失败的模组
+                    continue;
+                }
+                
+                if (currentModId != null && currentModId.equals(modId)) {
+                    return loadedMod;
+                }
+            }
+        } catch (Throwable e) {
+            // 极端情况下遍历失败，返回 null
+            String errorMsg = "Error iterating loaded mods: " + e.getMessage();
+            console.printWarning(errorMsg);
+            broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
+        }
+        
         return null;
     }
 
@@ -367,16 +491,57 @@ public class ModLoader {
      * 注册 Kotlin 模组
      */
     public void registerKotlinMod(KModAPI mod) {
-        int compatibilityLevel = checkApiVersionCompatibility(mod.getInfo().getVersion());
+        if (mod == null) {
+            console.printError("Cannot register null mod");
+            return;
+        }
+        
+        String modId = mod.getModId();
+        if (modId == null || modId.trim().isEmpty()) {
+            console.printError("Mod ID cannot be null or empty for mod: " + mod.getName());
+            return;
+        }
+        
+        // 检查模组 ID 是否已存在（禁止同名模组）
+        for (KModAPI loadedMod : kotlinMods) {
+            if (loadedMod != null && loadedMod.getModId() != null && loadedMod.getModId().equals(modId)) {
+                console.printError("Mod ID already exists: " + modId);
+                broadcastManager.broadcast("Hub.Log", "[ERROR] Duplicate mod ID: " + modId, "ModLoader");
+                return;
+            }
+        }
+        
+        String apiVersion = mod.getInfo().getApiVersion();
+        
+        // 检查 API 版本是否与模组版本相同（如果是，可能说明没有正确设置）
+        if (apiVersion.equals(mod.getInfo().getVersion())) {
+            console.printWarning(languageManager.getMessage("modloader.warning.api_version_equals_mod_version", mod.getName()));
+        }
+        
+        // 检查 API 版本兼容性
+        int compatibilityLevel = checkApiVersionCompatibility(apiVersion);
         
         if (compatibilityLevel == 2) {
-            console.printError(languageManager.getMessage("modloader.error.api_version", mod.getName()));
+            // 检查是版本过高还是过低
+            if (VersionComparator.isApiVersionTooHigh(mod.getInfo().getApiVersion(), MIN_API_VERSION)) {
+                console.printError(languageManager.getMessage("modloader.error.api_version_too_high", mod.getName()));
+            } else {
+                console.printError(languageManager.getMessage("modloader.error.api_version_too_low", mod.getName()));
+            }
             return;
         }
         
         if (compatibilityLevel == 1) {
             console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
-                mod.getName(), mod.getInfo().getVersion(), MIN_API_VERSION));
+                mod.getName(), mod.getInfo().getApiVersion(), MIN_API_VERSION));
+        }
+
+        // 注册模组，设置权限
+        // SystemMod 和 ConsoleMod 需要 SUPER_ADMIN 权限，其他模组默认为 NORMAL_COMPONENT
+        if ("system".equals(modId) || "console-mod".equals(modId)) {
+            broadcastManager.getPermissionManager().setModPermission(modId, ModPermission.SUPER_ADMIN);
+        } else {
+            broadcastManager.getPermissionManager().setModPermission(modId, ModPermission.NORMAL_COMPONENT);
         }
 
         kotlinMods.add(mod);
@@ -413,11 +578,41 @@ public class ModLoader {
      * 卸载所有模组
      */
     public void unloadAll() {
-        javaMods.forEach(IModAPI::onUnload);
-        javaMods.clear();
-        kotlinMods.forEach(KModAPI::onUnload);
-        kotlinMods.clear();
-        console.printLine(languageManager.getMessage("modloader.success.unloaded"));
+        try {
+            // 卸载 Java 模组
+            for (IModAPI mod : javaMods) {
+                if (mod != null) {
+                    try {
+                        mod.onUnload();
+                    } catch (Throwable e) {
+                        String errorMsg = "Error unloading mod '" + mod.getName() + "': " + e.getMessage();
+                        console.printError(errorMsg);
+                        broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                    }
+                }
+            }
+            javaMods.clear();
+            
+            // 卸载 Kotlin 模组
+            for (KModAPI mod : kotlinMods) {
+                if (mod != null) {
+                    try {
+                        mod.onUnload();
+                    } catch (Throwable e) {
+                        String errorMsg = "Error unloading mod '" + mod.getName() + "': " + e.getMessage();
+                        console.printError(errorMsg);
+                        broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                    }
+                }
+            }
+            kotlinMods.clear();
+            
+            console.printLine(languageManager.getMessage("modloader.success.unloaded"));
+        } catch (Throwable e) {
+            String errorMsg = "Critical error during unloadAll: " + e.getMessage();
+            console.printError(errorMsg);
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+        }
     }
 
     /**
@@ -426,58 +621,125 @@ public class ModLoader {
      * @return 是否卸载成功
      */
     public boolean unloadMod(String modName) {
-        // 尝试从 Java 模组中查找并卸载
-        IModAPI javaModToUnload = null;
-        for (IModAPI javaMod : javaMods) {
-            if (javaMod.getModId().equals(modName) || javaMod.getName().equals(modName)) {
-                javaModToUnload = javaMod;
-                break;
-            }
+        if (modName == null || modName.trim().isEmpty()) {
+            console.printError("Mod name cannot be null or empty");
+            return false;
         }
         
-        if (javaModToUnload != null) {
+        try {
+            // 尝试从 Java 模组中查找并卸载
+            IModAPI javaModToUnload = null;
             try {
-                javaModToUnload.onUnload();
+                for (IModAPI javaMod : javaMods) {
+                    if (javaMod == null) {
+                        continue;
+                    }
+                    
+                    String modId;
+                    String name;
+                    try {
+                        modId = javaMod.getModId();
+                        name = javaMod.getName();
+                    } catch (Throwable e) {
+                        // 忽略获取失败的模组
+                        continue;
+                    }
+                    
+                    if ((modId != null && modId.equals(modName)) || (name != null && name.equals(modName))) {
+                        javaModToUnload = javaMod;
+                        break;
+                    }
+                }
             } catch (Throwable e) {
-                String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
-                console.printError(errorMsg);
-                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                String errorMsg = "Error iterating Java mods: " + e.getMessage();
+                console.printWarning(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
             }
-            javaMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-            String successMsg = "Mod unloaded successfully: " + modName;
-            console.printSuccess(successMsg);
-            broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
-            return true;
-        }
+            
+            if (javaModToUnload != null) {
+                try {
+                    javaModToUnload.onUnload();
+                } catch (Throwable e) {
+                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                    console.printError(errorMsg);
+                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                }
+                javaMods.removeIf(mod -> {
+                    if (mod == null) return false;
+                    try {
+                        return (mod.getModId() != null && mod.getModId().equals(modName)) || 
+                               (mod.getName() != null && mod.getName().equals(modName));
+                    } catch (Throwable e) {
+                        return false;
+                    }
+                });
+                String successMsg = "Mod unloaded successfully: " + modName;
+                console.printSuccess(successMsg);
+                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
+                return true;
+            }
 
-        // 尝试从 Kotlin 模组中查找并卸载
-        KModAPI kotlinModToUnload = null;
-        for (KModAPI kotlinMod : kotlinMods) {
-            if (kotlinMod.getModId().equals(modName) || kotlinMod.getName().equals(modName)) {
-                kotlinModToUnload = kotlinMod;
-                break;
-            }
-        }
-        
-        if (kotlinModToUnload != null) {
+            // 尝试从 Kotlin 模组中查找并卸载
+            KModAPI kotlinModToUnload = null;
             try {
-                kotlinModToUnload.onUnload();
+                for (KModAPI kotlinMod : kotlinMods) {
+                    if (kotlinMod == null) {
+                        continue;
+                    }
+                    
+                    String modId;
+                    String name;
+                    try {
+                        modId = kotlinMod.getModId();
+                        name = kotlinMod.getName();
+                    } catch (Throwable e) {
+                        // 忽略获取失败的模组
+                        continue;
+                    }
+                    
+                    if ((modId != null && modId.equals(modName)) || (name != null && name.equals(modName))) {
+                        kotlinModToUnload = kotlinMod;
+                        break;
+                    }
+                }
             } catch (Throwable e) {
-                String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
-                console.printError(errorMsg);
-                broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                String errorMsg = "Error iterating Kotlin mods: " + e.getMessage();
+                console.printWarning(errorMsg);
+                broadcastManager.broadcast("Hub.Log", "[WARNING] " + errorMsg, "ModLoader");
             }
-            kotlinMods.removeIf(mod -> mod.getModId().equals(modName) || mod.getName().equals(modName));
-            String successMsg = "Mod unloaded successfully: " + modName;
-            console.printSuccess(successMsg);
-            broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
-            return true;
+            
+            if (kotlinModToUnload != null) {
+                try {
+                    kotlinModToUnload.onUnload();
+                } catch (Throwable e) {
+                    String errorMsg = "Error unloading mod '" + modName + "': " + e.getMessage();
+                    console.printError(errorMsg);
+                    broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+                }
+                kotlinMods.removeIf(mod -> {
+                    if (mod == null) return false;
+                    try {
+                        return (mod.getModId() != null && mod.getModId().equals(modName)) || 
+                               (mod.getName() != null && mod.getName().equals(modName));
+                    } catch (Throwable e) {
+                        return false;
+                    }
+                });
+                String successMsg = "Mod unloaded successfully: " + modName;
+                console.printSuccess(successMsg);
+                broadcastManager.broadcast("Hub.Log", "[SUCCESS] " + successMsg, "ModLoader");
+                return true;
+            }
+            
+            // 未找到模组
+            console.printError(languageManager.getMessage("modloader.error.mod_not_found", modName));
+            return false;
+        } catch (Throwable e) {
+            String errorMsg = "Critical error in unloadMod: " + e.getMessage();
+            console.printError(errorMsg);
+            broadcastManager.broadcast("Hub.Log", "[ERROR] " + errorMsg, "ModLoader");
+            return false;
         }
-
-        String notFoundMsg = "Mod not found: " + modName;
-        console.printError(notFoundMsg);
-        broadcastManager.broadcast("Hub.Log", "[ERROR] " + notFoundMsg, "ModLoader");
-        return false;
     }
 
     /**
@@ -513,13 +775,6 @@ public class ModLoader {
      */
     public BootFileManager getBootFileManager() {
         return bootFileManager;
-    }
-
-    /**
-     * 获取配置管理器
-     */
-    public ConfigManager getConfigManager() {
-        return configManager;
     }
 
     /**

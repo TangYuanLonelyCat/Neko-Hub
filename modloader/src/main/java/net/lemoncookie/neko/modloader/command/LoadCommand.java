@@ -2,6 +2,7 @@ package net.lemoncookie.neko.modloader.command;
 
 import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.api.IModAPI;
+import net.lemoncookie.neko.modloader.api.KModAPI;
 
 import java.io.File;
 import java.io.IOException;
@@ -121,26 +122,28 @@ public class LoadCommand extends BaseCommandListener {
                     // 加载模组类
                     Class<?> modClass = urlClassLoader.loadClass(modClassName);
                     
-                    // 检查是否实现了 IModAPI 接口
-                    if (!IModAPI.class.isAssignableFrom(modClass)) {
-                        throw new Exception("Mod class does not implement IModAPI: " + modClassName);
+                    // 检查是否实现了 IModAPI 或 KModAPI 接口
+                    boolean isJavaMod = IModAPI.class.isAssignableFrom(modClass);
+                    boolean isKotlinMod = KModAPI.class.isAssignableFrom(modClass);
+                    
+                    if (!isJavaMod && !isKotlinMod) {
+                        throw new Exception("Mod class does not implement IModAPI or KModAPI: " + modClassName);
                     }
 
                     // 创建模组实例
                     Constructor<?> constructor = modClass.getDeclaredConstructor();
-                    modInstance = (IModAPI) constructor.newInstance();
-
-                    // 检查模组 ID 是否重复
-                    for (IModAPI loadedMod : modLoader.getJavaMods()) {
-                        if (loadedMod.getModId().equals(modInstance.getModId())) {
-                            throw new Exception(modLoader.getLanguageManager().getMessage("command.load.error.duplicate_id", modInstance.getModId()));
-                        }
+                    
+                    if (isJavaMod) {
+                        modInstance = (IModAPI) constructor.newInstance();
+                        // 注册 Java 模组
+                        modLoader.registerJavaMod(modInstance);
+                    } else {
+                        // Kotlin 模组需要通过 KModAPI 接口访问
+                        Object kotlinModInstance = constructor.newInstance();
+                        modLoader.registerKotlinMod((KModAPI) kotlinModInstance);
                     }
-
-                    // 注册模组
-                    modLoader.registerJavaMod(modInstance);
                 } catch (Throwable e) {
-                    String warningMsg = "Error during mod loading: " + e.getMessage();
+                    String warningMsg = modLoader.getLanguageManager().getMessage("command.load.error.loading_error", e.getMessage());
                     modLoader.getConsole().printWarning(warningMsg);
                     modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + warningMsg, "LoadCommand");
                     throw e;

@@ -14,11 +14,13 @@ public class ExitCommand extends BaseCommandListener {
     
     @Override
     protected void execute(CommandMessage commandMessage, String senderModId) {
-        modLoader.getConsole().printInfo("Shutting down Neko-Hub...");
-        modLoader.getBroadcastManager().broadcast("Hub.Console", "[SYSTEM] Neko-Hub is shutting down...", "ExitCommand");
+        modLoader.getConsole().printInfo(
+            modLoader.getLanguageManager().getMessage("command.exit.info.shutting_down")
+        );
+        modLoader.getBroadcastManager().broadcast("Hub.Console", 
+            "[SYSTEM] " + modLoader.getLanguageManager().getMessage("command.exit.info.shutting_down"), "ExitCommand");
         modLoader.unloadAll();
         modLoader.getSimpleLogger().close();
-        modLoader.getConfigManager().shutdown();
         modLoader.getConsole().close();
         System.exit(0);
     }

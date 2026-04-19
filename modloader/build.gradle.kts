@@ -12,6 +12,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
 
 tasks.withType<Jar> {

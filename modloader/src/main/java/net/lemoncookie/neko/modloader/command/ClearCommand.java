@@ -16,9 +16,13 @@ public class ClearCommand extends BaseCommandListener {
     protected void execute(CommandMessage commandMessage, String senderModId) {
         try {
             modLoader.getConsole().clear();
-            modLoader.getConsole().printLine("Console cleared");
+            modLoader.getConsole().printSuccess(
+                modLoader.getLanguageManager().getMessage("command.clear.success")
+            );
         } catch (Throwable e) {
-            modLoader.getConsole().printError("Failed to clear console: " + e.getMessage());
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.clear.error.failed", e.getMessage())
+            );
         }
     }
 }

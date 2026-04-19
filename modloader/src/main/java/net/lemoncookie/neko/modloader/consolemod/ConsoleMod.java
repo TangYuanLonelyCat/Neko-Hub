@@ -9,7 +9,7 @@ import net.lemoncookie.neko.modloader.broadcast.ModPermission;
 /**
  * 控制台模组
  * 优先加载，默认权限为 SUPER_ADMIN (level 0)
- * 负责创建 Hub.System 和 Hub.Console 域，并显示消息
+ * 负责创建 Hub.Console 域，并显示消息
  */
 public class ConsoleMod implements IModAPI {
     
@@ -22,7 +22,7 @@ public class ConsoleMod implements IModAPI {
     
     @Override
     public String getVersion() {
-        return "3.0.0";
+        return "2.1.0";
     }
     
     @Override
@@ -36,24 +36,18 @@ public class ConsoleMod implements IModAPI {
     }
     
     @Override
+    public String getApiVersion() {
+        return "2.3.0";
+    }
+    
+    @Override
     public void onLoad(ModLoader modLoader) {
         this.modLoader = modLoader;
         
-        modLoader.getBroadcastManager().getPermissionManager().setModPermission(getModId(), ModPermission.SUPER_ADMIN);
+        // ConsoleMod 的权限已在 ModLoader.registerJavaMod() 中设置为 SUPER_ADMIN
         
-        int result = modLoader.getBroadcastManager().createSystemDomain(getModId());
-        if (result == BroadcastManager.ERROR_SUCCESS) {
-            String msg = modLoader.getLanguageManager().getMessage("consolemod.success.create_system_domain");
-            modLoader.getConsole().printSuccess(msg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
-        } else {
-            String errorMsg = modLoader.getLanguageManager().getMessage("consolemod.error.create_system_domain", result);
-            modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
-        }
-        
-        // 监听 Hub.Console 域，显示接收到的消息（带颜色）
-        result = modLoader.getBroadcastManager().createConsoleDomain(getModId());
+        // 创建 Hub.Console 域（公开公共域）
+        int result = modLoader.getBroadcastManager().createConsoleDomain(getModId());
         if (result == BroadcastManager.ERROR_SUCCESS) {
             String msg = modLoader.getLanguageManager().getMessage("consolemod.success.create_console_domain");
             modLoader.getConsole().printSuccess(msg);
@@ -100,11 +94,6 @@ public class ConsoleMod implements IModAPI {
     @Override
     public void onUnload() {
         // 控制台模组卸载（理论上不会发生）
-    }
-    
-    @Override
-    public void registerCommands(ModLoader modLoader, String modId) {
-        // 已废弃，命令系统改为通过广播域执行
     }
     
     @Override

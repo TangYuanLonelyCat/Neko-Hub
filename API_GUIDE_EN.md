@@ -493,6 +493,7 @@ public class PermissionManager {
 public interface IModAPI {
     String getModId();
     String getVersion();
+    String getApiVersion();         // Required! Returns the API version used by the mod
     String getPackageName();
     void onLoad(ModLoader modLoader);
     void onUnload();
@@ -509,10 +510,10 @@ public class ModLibrary {
 }
 ```
 
-**Important Changes (v3.0.0):**
-- Removed `registerCommands` method, command system now uses broadcast domain-based execution
-- Mods implement custom commands by listening to `Hub.Command` broadcast domain
-- `onLoad` method no longer receives `modId` parameter
+**Important Changes (v3.2.0):**
+- **Added `getApiVersion()` method**: Mods must explicitly declare the API version used
+- Mods without declared API version will be rejected
+- Warning is issued when API version equals mod version
 
 #### ModAPI Utility Class (`net.lemoncookie.neko.modloader.api`)
 
@@ -858,7 +859,46 @@ public class MyJavaMod implements IModAPI {
 }
 ```
 
-## Kotlin Mod Development Example
+## Kotlin Mod Development
+
+Kotlin mods need to implement the `KModAPI` interface. This interface provides Kotlin-style properties instead of Java-style methods.
+
+**Base Interface**:
+```kotlin
+interface KModAPI {
+    val modId: String
+    val version: String
+    val apiVersion: String          // Required! Returns the API version used by the mod
+    val packageName: String
+    val dependencies: List<ModDependency>  // Optional, defaults to empty list
+    fun onLoad(modLoader: ModLoader)
+    fun onUnload()
+    fun registerBroadcastListeners(modLoader: ModLoader, modId: String) {}
+}
+```
+
+**Important Changes (v3.2.1)**:
+- **KModAPI aligned with IModAPI**: Added `dependencies` property and `registerBroadcastListeners` method
+- **Stricter API version checking**: Mods must explicitly declare API version
+- **Mods without declared API version will be rejected**
+
+**Example**:
+```kotlin
+class MyMod : KModAPI {
+    override val modId = "my-mod"
+    override val version = "1.0.0"
+    override val apiVersion = "2.3.0"  // Must match ModLoader's MIN_API_VERSION
+    override val packageName = "com.example.mymod"
+    
+    override fun onLoad(modLoader: ModLoader) {
+        // Initialization logic
+    }
+    
+    override fun onUnload() {
+        // Cleanup logic
+    }
+}
+```
 
 ```kotlin
 import net.lemoncookie.neko.modloader.api.KModAPI  // Note: KModAPI, not ModAPI

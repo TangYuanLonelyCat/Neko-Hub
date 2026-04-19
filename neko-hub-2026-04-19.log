@@ -1,0 +1,160 @@
+Windows PowerShell
+版权所有（C） Microsoft Corporation。保留所有权利。
+
+安装最新的 PowerShell，了解新功能和改进！https://aka.ms/PSWindows
+
+PS D:\WorkFolder\Neko-Hub\modloader\build\libs> java -jar Neko-Hub-ModLoader.jar
+[Config] Generated new key pair and saved to neko-hub.keystore
+Neko-Hub v.3.2.3
+Neko-API MinVersion v.2.3.0
+
+Created Hub.Log domain
+Created Hub.Command domain
+Created Hub.System domain
+Mod loaded successfully: System Mod v3.2.0
+Created Hub.Console domain
+Mod loaded successfully: Console Mod v2.1.0
+[ModCore] [ModCore] Initializing version 2.0.0
+[ModCore] [ModCore] Started successfully on Java 24.0.2
+Creating default auto.boot file...
+No mod files found in mods folder
+Generated empty auto.boot file
+Loading boot file: auto.boot
+A total of 2 mods registered, took 0 seconds.
+
+ModLoader initialization completed. Starting interactive console...
+[lemon]>/autoboot
+Generated auto.boot file with dependency order
+[lemon]>/exit
+Neko-Hub is shutting down...
+[ExitCommand] [SYSTEM] Neko-Hub is shutting down...
+All mods unloaded
+PS D:\WorkFolder\Neko-Hub\modloader\build\libs> java -jar Neko-Hub-ModLoader.jar
+[Config] Loaded existing key pair
+Neko-Hub v.3.2.3
+Neko-API MinVersion v.2.3.0
+
+Created Hub.Log domain
+Created Hub.Command domain
+Created Hub.System domain
+Mod loaded successfully: System Mod v3.2.0
+Created Hub.Console domain
+Mod loaded successfully: Console Mod v2.1.0
+[ModCore] [ModCore] Initializing version 2.0.0
+[ModCore] [ModCore] Started successfully on Java 24.0.2
+Loading boot file: auto.boot
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-a-1.0.0.jar
+[TestModA] Loaded successfully!
+[TestModA] Hello from TestModA (Kotlin)!
+Mod loaded successfully: TestModA - Base Module (Kotlin) v3.0.0
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-b-1.0.0.jar
+[TestModB] Loaded successfully!
+[TestModB] Hello from TestModB (Kotlin)!
+Mod loaded successfully: TestModB - Complete Module (Kotlin) v3.0.0
+A total of 4 mods registered, took 0 seconds.
+
+ModLoader initialization completed. Starting interactive console...
+[lemon]>/test
+OK
+Attempting to upgrade permission to SYSTEM_COMPONENT (level 1)...
+Are you sure you want to upgrade mod TestModA to System Component? Please confirm carefully, improper upgrade may lead to unexpected consequences [Y/N]
+[Y/N]: N
+Permission upgrade failed or denied (error code: 502)
+TestModB: Complete!
+[lemon]>/set language zh
+已切换语言为：zh
+[lemon]>/test
+OK
+Attempting to upgrade permission to SYSTEM_COMPONENT (level 1)...
+确定要将模组 TestModA 提权至 系统级组件 吗？请仔细确认，不当的提权可能会导致意外后果 [Y/N]
+[Y/N]: /exit
+请输入 Y 或 N
+[Y/N]: N
+Permission upgrade failed or denied (error code: 502)
+TestModB: Complete!
+[lemon]>/exit
+Neko-Hub 正在关闭...
+[ExitCommand] [SYSTEM] Neko-Hub 正在关闭...
+[TestModA] Unloaded!
+[TestModB] Unloaded!
+所有模组已卸载
+PS D:\WorkFolder\Neko-Hub\modloader\build\libs> java -jar Neko-Hub-ModLoader.jar
+[Config] Loaded existing key pair
+[Config] Configuration signature verification failed!
+[Config] Sensitive configurations (mod permissions) will be ignored for security.
+Neko-Hub v.3.2.3
+Neko-API MinVersion v.2.3.0
+
+Created Hub.Log domain
+Created Hub.Command domain
+Created Hub.System domain
+Mod loaded successfully: System Mod v3.2.0
+Created Hub.Console domain
+Mod loaded successfully: Console Mod v2.1.0
+[ModCore] [ModCore] Initializing version 2.0.0
+[ModCore] [ModCore] Started successfully on Java 24.0.2
+Loading boot file: auto.boot
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-a-1.0.0.jar
+[TestModA] Loaded successfully!
+[TestModA] Hello from TestModA (Kotlin)!
+Mod loaded successfully: TestModA - Base Module (Kotlin) v3.0.0
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-b-1.0.0.jar
+[TestModB] Loaded successfully!
+[TestModB] Hello from TestModB (Kotlin)!
+Mod loaded successfully: TestModB - Complete Module (Kotlin) v3.0.0
+A total of 4 mods registered, took 0 seconds.
+
+ModLoader initialization completed. Starting interactive console...
+[lemon]>/test
+OK
+Attempting to upgrade permission to SYSTEM_COMPONENT (level 1)...
+Are you sure you want to upgrade mod TestModA to System Component? Please confirm carefully, improper upgrade may lead to unexpected consequences [Y/N]
+[Y/N]: Y
+Permission upgrade successful!
+TestModB: Complete!
+[lemon]>/test
+OK
+Attempting to upgrade permission to SYSTEM_COMPONENT (level 1)...
+Permission upgrade successful!
+TestModB: Complete!
+[lemon]>/exit
+Neko-Hub is shutting down...
+[ExitCommand] [SYSTEM] Neko-Hub is shutting down...
+[TestModA] Unloaded!
+[TestModB] Unloaded!
+All mods unloaded
+PS D:\WorkFolder\Neko-Hub\modloader\build\libs> java -jar Neko-Hub-ModLoader.jar
+[Config] Loaded existing key pair
+[Config] Configuration signature verification failed!
+[Config] Sensitive configurations (mod permissions) will be ignored for security.
+Neko-Hub v.3.2.3
+Neko-API MinVersion v.2.3.0
+
+Created Hub.Log domain
+Created Hub.Command domain
+Created Hub.System domain
+Mod loaded successfully: System Mod v3.2.0
+Created Hub.Console domain
+Mod loaded successfully: Console Mod v2.1.0
+[ModCore] [ModCore] Initializing version 2.0.0
+[ModCore] [ModCore] Started successfully on Java 24.0.2
+Loading boot file: auto.boot
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-a-1.0.0.jar
+[TestModA] Loaded successfully!
+[TestModA] Hello from TestModA (Kotlin)!
+Mod loaded successfully: TestModA - Base Module (Kotlin) v3.0.0
+Loading mod from: D:\WorkFolder\Neko-Hub\modloader\build\libs\mods\testmod-b-1.0.0.jar
+[TestModB] Loaded successfully!
+[TestModB] Hello from TestModB (Kotlin)!
+Mod loaded successfully: TestModB - Complete Module (Kotlin) v3.0.0
+A total of 4 mods registered, took 0 seconds.
+
+ModLoader initialization completed. Starting interactive console...
+[lemon]>/test
+OK
+Attempting to upgrade permission to SYSTEM_COMPONENT (level 1)...
+Are you sure you want to upgrade mod TestModA to System Component? Please confirm carefully, improper upgrade may lead to unexpected consequences [Y/N]
+[Y/N]: N
+Permission upgrade failed or denied (error code: 502)
+TestModB: Complete!
+[lemon]>

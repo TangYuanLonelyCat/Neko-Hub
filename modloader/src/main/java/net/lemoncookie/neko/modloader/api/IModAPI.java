@@ -23,6 +23,16 @@ public interface IModAPI {
     String getVersion();
 
     /**
+     * 获取模组使用的 API 版本
+     * 用于检查与 ModLoader 的兼容性
+     * 
+     * @return API 版本号（格式：major.minor.patch）
+     */
+    default String getApiVersion() {
+        return getVersion(); // 默认返回模组版本，子类可以覆盖
+    }
+
+    /**
      * 获取模组名称
      */
     default String getName() {
