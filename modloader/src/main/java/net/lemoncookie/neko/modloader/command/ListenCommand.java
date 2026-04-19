@@ -40,21 +40,23 @@ public class ListenCommand extends BaseCommandListener {
                 stopListening(modLoader, domainName);
                 break;
             default:
-                modLoader.getConsole().printError("Unknown action: " + action);
-                modLoader.getConsole().printError("Use 'start' to begin listening or 'stop' to stop listening");
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.listen.error.unknown_action", action));
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.listen.info.usage"));
         }
     }
 
     private void startListening(ModLoader modLoader, String domainName) {
         if (listeners.containsKey(domainName)) {
-            modLoader.getConsole().printWarning("Already listening to domain: " + domainName);
+            modLoader.getConsole().printWarning(modLoader.getLanguageManager().getMessage("command.listen.warning.already_listening", domainName));
             return;
         }
 
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessageReceived(String domain, String message, String senderModId) {
-                modLoader.getConsole().printLine("[" + domain + "] (from: " + senderModId + "): " + message);
+                modLoader.getConsole().printLine(
+                    modLoader.getLanguageManager().getMessage("command.listen.message_format", domain, senderModId, message)
+                );
             }
         };
 
@@ -62,27 +64,27 @@ public class ListenCommand extends BaseCommandListener {
         
         if (result == 0) {
             listeners.put(domainName, listener);
-            modLoader.getConsole().printSuccess("Started listening to domain: " + domainName);
+            modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.listen.success.started", domainName));
         } else {
-            modLoader.getConsole().printError("Failed to start listening. Error code: " + result);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.listen.error.failed_start", result));
         }
     }
 
     private void stopListening(ModLoader modLoader, String domainName) {
         MessageListener listener = listeners.remove(domainName);
         if (listener == null) {
-            modLoader.getConsole().printWarning("Not listening to domain: " + domainName);
+            modLoader.getConsole().printWarning(modLoader.getLanguageManager().getMessage("command.listen.warning.not_listening", domainName));
             return;
         }
 
         int result = modLoader.getBroadcastManager().unlisten(domainName, listener);
         
         if (result == BroadcastManager.ERROR_SUCCESS) {
-            modLoader.getConsole().printSuccess("Stopped listening to domain: " + domainName);
+            modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.listen.success.stopped", domainName));
         } else if (result == BroadcastManager.ERROR_DOMAIN_NOT_FOUND) {
-            modLoader.getConsole().printError("Domain not found: " + domainName);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.listen.error.domain_not_found", domainName));
         } else {
-            modLoader.getConsole().printError("Failed to stop listening. Error code: " + result);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.listen.error.failed_stop", result));
         }
     }
 }

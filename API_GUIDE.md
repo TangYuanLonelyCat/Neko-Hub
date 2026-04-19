@@ -394,6 +394,7 @@ Java 模组需要实现 `IModAPI` 接口。建议使用 `ModAPI` 工具类来简
 public interface IModAPI {
     String getModId();
     String getVersion();
+    String getApiVersion();           // 必须实现！返回模组使用的 API 版本
     String getPackageName();
     void onLoad(ModLoader modLoader);
     void onUnload();
@@ -401,10 +402,10 @@ public interface IModAPI {
 }
 ```
 
-**重要变更（v3.0.0）**：
-- 删除了 `registerCommands` 方法，命令系统改为基于广播域
-- 模组通过监听 `Hub.Command` 广播域来实现自定义命令
-- `onLoad` 方法不再接收 `modId` 参数
+**重要变更（v3.2.0）**：
+- **新增 `getApiVersion()` 方法**：模组必须显式声明使用的 API 版本
+- 未声明 API 版本的模组将被拒绝加载
+- API 版本与模组版本相同时会发出警告
 
 **使用 ModAPI 工具类**：
 ```java
@@ -461,6 +462,8 @@ public class MyMod extends ModAPI implements IModAPI {
 
 **ModAPI 工具类提供的方法**：
 
+> **注意**：Kotlin 模组也可以直接使用 Java 的 ModAPI 类，无需使用 Kotlin 专用的 ModAPI 接口。
+
 ```java
 // 命令注册
 public boolean registerCommand(String name, Command command, boolean allowOverride)
@@ -478,6 +481,11 @@ public int createDomain(String name, boolean isPrivate, boolean isPublic)
 public int createPrivateDomain(String name)
 public int createPublicDomain(String name)
 
+// 权限管理（需要用户确认）
+public int requestPermissionUpgrade(int targetLevel)
+public int requestSystemPermission()  // 请求 SYSTEM_COMPONENT 权限
+public int requestAdminPermission()   // 请求 SUPER_ADMIN 权限
+
 // 控制台输出
 public void print(String text)
 public void printError(String text)
@@ -490,9 +498,13 @@ public String getModId()
 public String getModName()
 public ModLoader getModLoader()
 public BroadcastManager getBroadcastManager()
-public CommandSystem getCommandSystem()
 public Console getConsole()
 ```
+
+**权限升级说明**：
+- 向下或平级提权（如从 level 2 到 level 3）不需要确认
+- 向上提权（如从 level 2 到 level 1 或 0）需要用户确认
+- 用户会在控制台看到确认提示，输入 Y 确认，N 拒绝
 
 **Java 版库支持**：
 ```java
@@ -520,17 +532,44 @@ public class ModCore {
 interface ModAPI {
     val modId: String
     val version: String
+    val apiVersion: String          // 必须实现！返回模组使用的 API 版本
     val name: String
         get() = modId
     val packageName: String
+    val dependencies: List<ModDependency>  // 可选，默认返回空列表
     fun onLoad(modLoader: ModLoader)
     fun onUnload()
     fun registerCommands(modLoader: ModLoader) {}
-    fun registerBroadcastListeners(modLoader: ModLoader) {}
+    fun registerBroadcastListeners(modLoader: ModLoader, modId: String) {}
     fun getInfo(): ModInfo
 }
 
 data class ModInfo(val id: String, val name: String, val version: String)
+data class ModDependency(val modId: String, val version: String)
+```
+
+**重要变更（v3.2.1）**：
+- **KModAPI 与 IModAPI 功能对齐**：添加了 `dependencies` 属性和 `registerBroadcastListeners` 方法
+- **API 版本检查更严格**：模组必须显式声明 API 版本
+- **未声明 API 版本的模组将被拒绝加载**
+
+**示例**：
+```kotlin
+class MyMod : ModAPI {
+    override val modId = "my-mod"
+    override val version = "1.0.0"
+    override val apiVersion = "2.3.0"  // 必须与 ModLoader 的 MIN_API_VERSION 一致
+    override val packageName = "com.example.mymod"
+    override val dependencies = emptyList()
+    
+    override fun onLoad(modLoader: ModLoader) {
+        // 初始化逻辑
+    }
+    
+    override fun onUnload() {
+        // 清理逻辑
+    }
+}
 ```
 
 #### Kotlin 版库支持 (`net.lemoncookie.neko.modloader.lib`)

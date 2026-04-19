@@ -30,44 +30,51 @@ public class HelpCommand extends BaseCommandListener {
             
             if ("system".equals(targetMod)) {
                 modLoader.getConsole().printLine();
-                modLoader.getConsole().printLine("═══════════════════════════════════════");
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.divider"));
                 modLoader.getConsole().printCyan("? " + modLoader.getLanguageManager().getMessage("command.help.info.system_title"));
                 modLoader.getConsole().printLine();
                 
-                modLoader.getConsole().printLine("Available commands:");
-                modLoader.getConsole().printLine("  /set - Set configuration (modPermission, bootfile, language)");
-                modLoader.getConsole().printLine("  /clear - Clear the console");
-                modLoader.getConsole().printLine("  /load - Load a mod from JAR file");
-                modLoader.getConsole().printLine("  /unload - Unload a mod by name");
-                modLoader.getConsole().printLine("  /list - List loaded mods");
-                modLoader.getConsole().printLine("  /help - Show this help message");
-                modLoader.getConsole().printLine("  /exit - Exit the application");
-                modLoader.getConsole().printLine("  /say - Broadcast a message");
-                modLoader.getConsole().printLine("  /listen - Listen to a domain");
-                modLoader.getConsole().printLine("  /autoboot - Manage auto-boot configuration");
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command_list"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.set"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.change"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.clear"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.load"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.unload"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.list"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.help"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.exit"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.say"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.listen"));
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.command.autoboot"));
                 modLoader.getConsole().printLine();
-                modLoader.getConsole().printLine("═══════════════════════════════════════");
+                modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.divider"));
             } else {
                 boolean found = false;
                 for (IModAPI mod : modLoader.getJavaMods()) {
                     if (mod.getModId().equals(targetMod) || mod.getName().equals(targetMod)) {
                         found = true;
                         modLoader.getConsole().printLine();
-                        modLoader.getConsole().printLine("═══════════════════════════════════════");
+                        modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.divider"));
                         modLoader.getConsole().printCyan("? " + modLoader.getLanguageManager().getMessage("command.help.info.mod_title", mod.getName()));
                         modLoader.getConsole().printLine();
-                        modLoader.getConsole().printLine("Mod ID: " + mod.getModId());
-                        modLoader.getConsole().printLine("Version: " + mod.getVersion());
-                        modLoader.getConsole().printLine("Package: " + mod.getPackageName());
+                        modLoader.getConsole().printLine(
+                            modLoader.getLanguageManager().getMessage("command.help.mod_id", mod.getModId())
+                        );
+                        modLoader.getConsole().printLine(
+                            modLoader.getLanguageManager().getMessage("command.help.mod_version", mod.getVersion())
+                        );
+                        modLoader.getConsole().printLine(
+                            modLoader.getLanguageManager().getMessage("command.help.mod_package", mod.getPackageName())
+                        );
                         modLoader.getConsole().printLine();
-                        modLoader.getConsole().printLine("═══════════════════════════════════════");
+                        modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.divider"));
                         break;
                     }
                 }
                 
                 if (!found) {
                     modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.help.error.mod_not_found", targetMod));
-                    modLoader.getConsole().printLine("Use /help to see system commands");
+                    modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.help.use_help"));
                 }
             }
         } catch (Throwable e) {

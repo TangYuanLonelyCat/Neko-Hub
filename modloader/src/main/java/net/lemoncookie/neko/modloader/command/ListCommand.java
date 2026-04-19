@@ -63,20 +63,26 @@ public class ListCommand extends BaseCommandListener {
         int endIndex = Math.min(startIndex + MODS_PER_PAGE, totalMods);
         
         modLoader.getConsole().printLine();
-        modLoader.getConsole().printLine("═══════════════════════════════════════");
+        modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.divider"));
         modLoader.getConsole().printCyan("? " + modLoader.getLanguageManager().getMessage("command.list.info.mods_title", page, totalPages));
         modLoader.getConsole().printLine();
         
         for (int i = startIndex; i < endIndex; i++) {
             IModAPI mod = allMods.get(i);
-            modLoader.getConsole().printLine("  " + (i + 1) + ". " + mod.getName() + " v" + mod.getVersion());
-            modLoader.getConsole().printLine("     ID: " + mod.getModId());
-            modLoader.getConsole().printLine("     Package: " + mod.getPackageName());
+            modLoader.getConsole().printLine(
+                modLoader.getLanguageManager().getMessage("command.list.mod_entry", i + 1, mod.getName(), mod.getVersion())
+            );
+            modLoader.getConsole().printLine(
+                modLoader.getLanguageManager().getMessage("command.list.mod_id", mod.getModId())
+            );
+            modLoader.getConsole().printLine(
+                modLoader.getLanguageManager().getMessage("command.list.mod_package", mod.getPackageName())
+            );
             modLoader.getConsole().printLine();
         }
         
         modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.info.total_loaded", totalMods));
         modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.info.use_list"));
-        modLoader.getConsole().printLine("═══════════════════════════════════════");
+        modLoader.getConsole().printLine(modLoader.getLanguageManager().getMessage("command.list.divider"));
     }
 }

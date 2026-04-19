@@ -17,7 +17,9 @@ public class AutobootCommand extends BaseCommandListener {
         try {
             modLoader.getBootFileManager().generateAutoBoot();
         } catch (Throwable e) {
-            modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.autoboot.error.failed", e.getMessage())
+            );
         }
     }
 }

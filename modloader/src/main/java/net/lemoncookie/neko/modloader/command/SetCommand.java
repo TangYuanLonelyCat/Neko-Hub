@@ -56,35 +56,53 @@ public class SetCommand implements MessageListener {
 
     /**
      * 设置模组权限
-     * 语法：/set modpermission [模组名或模组包名] [level 值]
+     * 语法：/set modpermission [模组名] [level 值]
      */
     private void setModPermission(CommandMessage commandMessage) {
-        if (commandMessage.getPartCount() < 2) {
+        if (commandMessage.getPartCount() < 3) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/set modpermission [模组名] [level 值]")
             );
             return;
         }
 
-        String modName = commandMessage.getPart(0);
+        // 跳过第一个参数 "modpermission"
+        String modName = commandMessage.getPart(1);
         if ((modName.startsWith("\"") && modName.endsWith("\"")) || 
             (modName.startsWith("'") && modName.endsWith("'"))) {
             modName = modName.substring(1, modName.length() - 1);
         }
 
+        // 防护：禁止修改 system 模组的权限
+        if ("system".equals(modName)) {
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.cannot_modify_system"));
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_system"), "SetCommand");
+            return;
+        }
+        
+        // 防护：禁止修改控制台模组的权限
+        if ("console-mod".equals(modName)) {
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.cannot_modify_console"));
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_console"), "SetCommand");
+            return;
+        }
+
         int level;
         try {
-            level = Integer.parseInt(commandMessage.getPart(1));
+            level = Integer.parseInt(commandMessage.getPart(2));
             if (level < 0 || level > 3) {
                 modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.level_range"));
                 return;
             }
         } catch (NumberFormatException e) {
-            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.invalid_level", commandMessage.getPart(1)));
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.invalid_level", commandMessage.getPart(2)));
             return;
         }
 
-        modLoader.getConfigManager().setModPermission(modName, level);
+        // 更新内存中的权限
+        modLoader.getBroadcastManager().getPermissionManager().setModPermission(modName, net.lemoncookie.neko.modloader.broadcast.ModPermission.fromLevel(level));
+        // 持久化到 boot 文件
+        modLoader.getBootFileManager().insertCommandAtTail("/set modpermission " + modName + " " + level);
         modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.permission", modName, level));
     }
 
@@ -93,14 +111,14 @@ public class SetCommand implements MessageListener {
      * 语法：/set bootfile [文件名]
      */
     private void setBootFile(CommandMessage commandMessage) {
-        if (commandMessage.getPartCount() < 1) {
+        if (commandMessage.getPartCount() < 2) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/set bootfile [文件名]")
             );
             return;
         }
 
-        String fileName = commandMessage.getPart(0);
+        String fileName = commandMessage.getPart(1);
         // 移除可能的引号
         if ((fileName.startsWith("\"") && fileName.endsWith("\"")) || 
             (fileName.startsWith("'") && fileName.endsWith("'"))) {
@@ -114,7 +132,8 @@ public class SetCommand implements MessageListener {
             return;
         }
 
-        modLoader.getConfigManager().setBootFile(fileName);
+        // 持久化到 boot 文件（替换旧的 /change bootfile 命令）
+        modLoader.getBootFileManager().insertCommandAtHeadWithReplace("/change bootfile " + fileName, "/change bootfile");
         modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.bootfile", fileName));
     }
 
@@ -123,14 +142,14 @@ public class SetCommand implements MessageListener {
      * 语法：/set language [en/zh/其他语言文件名（不含后缀）]
      */
     private void setLanguage(CommandMessage commandMessage) {
-        if (commandMessage.getPartCount() < 1) {
+        if (commandMessage.getPartCount() < 2) {
             modLoader.getConsole().printError(
                 modLoader.getLanguageManager().getMessage("command.error.args", "/set language [en/zh]")
             );
             return;
         }
 
-        String lang = commandMessage.getPart(0).toLowerCase();
+        String lang = commandMessage.getPart(1).toLowerCase();
         try (java.io.InputStream is = modLoader.getLanguageManager().getClass().getResourceAsStream("/lang/" + lang + ".json")) {
             if (is == null) {
                 modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.language_not_found", lang));
@@ -142,6 +161,7 @@ public class SetCommand implements MessageListener {
         }
 
         modLoader.getLanguageManager().loadLanguage(lang);
+        modLoader.getBootFileManager().insertCommandAtHead("/set language " + lang);
         modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("command.set.success.language", lang));
     }
 }

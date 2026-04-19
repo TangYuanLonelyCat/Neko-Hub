@@ -51,6 +51,13 @@ public class BroadcastManager {
     }
 
     /**
+     * 获取权限管理器
+     */
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+    
+    /**
      * 添加广播域
      */
     public int addDomain(String name, boolean isPrivate, boolean isPublic, String ownerModId) {
@@ -58,10 +65,12 @@ public class BroadcastManager {
             return ERROR_DOMAIN_EXISTS; // 广播域已存在
         }
         
-        // 检查权限 - 只有 level 0 和 level 1 可以创建域
-        ModPermission modPermission = permissionManager.getModPermission(ownerModId);
-        if (modPermission.getLevel() > 1) {
-            return ERROR_PERMISSION_DENIED; // 权限不足
+        // 检查权限 - level<=2 可以创建域，system 始终拥有最高权限
+        if (!"system".equals(ownerModId)) {
+            ModPermission modPermission = permissionManager.getModPermission(ownerModId);
+            if (modPermission.getLevel() > 2) {
+                return ERROR_PERMISSION_DENIED; // 权限不足
+            }
         }
         
         BroadcastDomain domain = new BroadcastDomain(name, isPrivate, isPublic, ownerModId);
@@ -194,30 +203,49 @@ public class BroadcastManager {
 
     /**
      * 尝试提权
+     * 
+     * @param modId 模组 ID
+     * @param modName 模组名称
+     * @param targetLevel 目标权限等级
+     * @return 错误码
      */
     public int requestPermissionUpgrade(String modId, String modName, int targetLevel) {
-        // 向下提权不需要确认
         ModPermission currentPermission = permissionManager.getModPermission(modId);
-        if (targetLevel >= currentPermission.getLevel()) {
+        
+        // 降级（level 变大，权限变小）不需要确认
+        // 例如：level 1 (SYSTEM) → level 2 (NORMAL)
+        if (targetLevel > currentPermission.getLevel()) {
             permissionManager.setModPermission(modId, ModPermission.fromLevel(targetLevel));
+            modLoader.getBootFileManager().insertCommandAtTail("/set modpermission " + modName + " " + targetLevel);
             return ERROR_SUCCESS;
         }
         
-        // 向上提权需要用户确认
-        try {
-            modLoader.getConsole().printWarning(
-                modLoader.getLanguageManager().getMessage("broadcast.confirm.upgrade", modName, 
-                    ModPermission.fromLevel(targetLevel).getDisplayName())
-            );
-            boolean confirmed = modLoader.getConsole().readConfirmation();
-            if (!confirmed) {
+        // 升级（level 变小，权限变大）需要用户确认
+        // 例如：level 2 (NORMAL) → level 1 (SYSTEM)
+        if (targetLevel < currentPermission.getLevel()) {
+            try {
+                // 获取目标权限的语言键
+                String permissionKey = "permission." + ModPermission.fromLevel(targetLevel).name().toLowerCase();
+                String permissionName = modLoader.getLanguageManager().getMessage(permissionKey);
+                
+                modLoader.getConsole().printWarning(
+                    modLoader.getLanguageManager().getMessage("broadcast.confirm.upgrade", modName, permissionName)
+                );
+                boolean confirmed = modLoader.getConsole().readConfirmation();
+                if (!confirmed) {
+                    return ERROR_PERMISSION_DENIED;
+                }
+            } catch (Throwable e) {
                 return ERROR_PERMISSION_DENIED;
             }
-        } catch (Throwable e) {
-            return ERROR_PERMISSION_DENIED;
+            
+            permissionManager.setModPermission(modId, ModPermission.fromLevel(targetLevel));
+            // 持久化权限配置到 boot 文件
+            modLoader.getBootFileManager().insertCommandAtTail("/set modpermission " + modName + " " + targetLevel);
+            return ERROR_SUCCESS;
         }
         
-        permissionManager.setModPermission(modId, ModPermission.fromLevel(targetLevel));
+        // 目标等级与当前等级相同，无需操作
         return ERROR_SUCCESS;
     }
 
@@ -359,13 +387,6 @@ public class BroadcastManager {
      */
     public boolean hasDomain(String name) {
         return domains.containsKey(name);
-    }
-
-    /**
-     * 获取权限管理器
-     */
-    public PermissionManager getPermissionManager() {
-        return permissionManager;
     }
 
     /**

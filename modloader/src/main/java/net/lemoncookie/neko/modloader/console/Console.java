@@ -144,7 +144,7 @@ public class Console {
                     handleInput(input.trim());
                 }
             } catch (IOException e) {
-                printLine("Console error: " + e.getMessage());
+                printLine(modLoader.getLanguageManager().getMessage("console.error.input_error", e.getMessage()));
             }
         });
         
@@ -156,22 +156,27 @@ public class Console {
      * 处理用户输入
      */
     private void handleInput(String input) {
-        if (input.isEmpty()) {
+        if (input == null || input.isEmpty()) {
             return;
         }
         
-        // 检查是否是命令（以 '/' 开头）
-        if (input.startsWith("/")) {
-            // 解析命令并发送到 Hub.Command 广播域
-            sendCommand(input.substring(1));
-        } else {
-            // 普通消息发送到 Hub.Console
-            modLoader.getBroadcastManager().broadcast("Hub.Console", input, "Console");
+        try {
+            // 检查是否是命令（以 '/' 开头）
+            if (input.startsWith("/")) {
+                // 解析命令并发送到 Hub.Command 广播域
+                sendCommand(input.substring(1));
+            } else {
+                // 普通消息发送到 Hub.Console
+                modLoader.getBroadcastManager().broadcast("Hub.Console", input, "Console");
+            }
+        } catch (Exception e) {
+            printError(modLoader.getLanguageManager().getMessage("console.error.processing_error", e.getMessage()));
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] Error processing input '" + input + "': " + e.getMessage(), "Console");
         }
     }
     
     /**
-     * 解析命令并发送到 Hub.Command 广播域（包级访问，供 BootFileManager 使用）
+     * 解析命令并发送到 Hub.Command 广播域（公共访问，供 BootFileManager 使用）
      * 格式：/command part1 part2 part3 ...
      * 发送到 Hub.Command 的 JSON:
      * {
@@ -180,36 +185,54 @@ public class Console {
      *     "sender": "Console"
      * }
      */
-    void handleCommand(String commandInput) {
-        sendCommand(commandInput);
+    public void handleCommand(String commandInput) {
+        if (commandInput == null || commandInput.trim().isEmpty()) {
+            return;
+        }
+        
+        try {
+            sendCommand(commandInput);
+        } catch (Throwable e) {
+            printError(modLoader.getLanguageManager().getMessage("console.error.command_error", e.getMessage()));
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.command_error", e.getMessage()), "Console");
+        }
     }
     
     /**
      * 解析命令并发送到 Hub.Command 广播域
      */
     private void sendCommand(String commandInput) {
-        String[] tokens = parseCommandTokens(commandInput);
-        if (tokens.length == 0) {
+        if (commandInput == null || commandInput.trim().isEmpty()) {
             return;
         }
         
-        String commandName = tokens[0];
-        String[] parts = tokens.length > 1 ? 
-            java.util.Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
-        
-        // 创建命令消息
-        net.lemoncookie.neko.modloader.command.CommandMessage commandMessage = 
-            new net.lemoncookie.neko.modloader.command.CommandMessage(commandName, parts, "Console");
-        
-        // 发送到 Hub.Command 广播域
-        int result = modLoader.getBroadcastManager().broadcast(
-            net.lemoncookie.neko.modloader.broadcast.BroadcastManager.HUB_COMMAND,
-            commandMessage.toJson(),
-            "Console"
-        );
-        
-        if (result != net.lemoncookie.neko.modloader.broadcast.BroadcastManager.ERROR_SUCCESS) {
-            printError("Failed to send command to Hub.Command: Error " + result);
+        try {
+            String[] tokens = parseCommandTokens(commandInput);
+            if (tokens.length == 0) {
+                return;
+            }
+            
+            String commandName = tokens[0];
+            String[] parts = tokens.length > 1 ? 
+                java.util.Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
+            
+            // 创建命令消息
+            net.lemoncookie.neko.modloader.command.CommandMessage commandMessage = 
+                new net.lemoncookie.neko.modloader.command.CommandMessage(commandName, parts, "Console");
+            
+            // 发送到 Hub.Command 广播域
+            int result = modLoader.getBroadcastManager().broadcast(
+                net.lemoncookie.neko.modloader.broadcast.BroadcastManager.HUB_COMMAND,
+                commandMessage.toJson(),
+                "Console"
+            );
+            
+            if (result != net.lemoncookie.neko.modloader.broadcast.BroadcastManager.ERROR_SUCCESS) {
+                printError(modLoader.getLanguageManager().getMessage("console.error.send_command_failed", result));
+            }
+        } catch (Throwable e) {
+            printError(modLoader.getLanguageManager().getMessage("console.error.send_error", e.getMessage()));
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.send_error", e.getMessage()), "Console");
         }
     }
     
@@ -261,12 +284,12 @@ public class Console {
                 // Unix-like systems
                 new ProcessBuilder("clear").inheritIO().start().waitFor();
             }
-        } catch (Throwable e) {
-            modLoader.getConsole().printWarning("Clear screen failed: " + e.getMessage());
-            // Fallback: print empty lines
-            for (int i = 0; i < 50; i++) {
-                printLine();
-            }
+        } catch (Exception e) {
+            modLoader.getConsole().printWarning(modLoader.getLanguageManager().getMessage("console.warning.clear_failed", e.getMessage()));
+        }
+        // Fallback: print empty lines
+        for (int i = 0; i < 50; i++) {
+            printLine();
         }
     }
 
@@ -292,7 +315,7 @@ public class Console {
                     return false;
                 }
             }
-            printLine("Please enter Y or N");
+            printLine(modLoader.getLanguageManager().getMessage("console.confirm.invalid_input"));
         }
     }
 

@@ -34,12 +34,18 @@ public class SayCommand extends BaseCommandListener {
             int result = modLoader.getBroadcastManager().broadcast(domainName, message, "Console");
             
             if (result == 0) {
-                modLoader.getConsole().printSuccess("Message sent to " + domainName + ": " + message);
+                modLoader.getConsole().printSuccess(
+                    modLoader.getLanguageManager().getMessage("say.success.sent", domainName, message)
+                );
             } else {
-                modLoader.getConsole().printError("Failed to send message. Error code: " + result);
+                modLoader.getConsole().printError(
+                    modLoader.getLanguageManager().getMessage("say.error.send_failed", result)
+                );
             }
         } catch (Throwable e) {
-            modLoader.getConsole().printError("Failed to send message: " + e.getMessage());
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("say.error.failed", e.getMessage())
+            );
         }
     }
 }

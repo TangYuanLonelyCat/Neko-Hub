@@ -99,6 +99,32 @@ public class ModAPI {
         return createDomain(name, false, true);
     }
     
+    /**
+     * 请求权限升级（需要用户确认）
+     * 向下或平级提权不需要确认，向上提权需要用户确认
+     * @param targetLevel 目标权限等级（0=SUPER_ADMIN, 1=SYSTEM_COMPONENT, 2=NORMAL_COMPONENT, 3=RESTRICTED_COMPONENT）
+     * @return 错误码（0 表示成功）
+     */
+    public int requestPermissionUpgrade(int targetLevel) {
+        return modLoader.getBroadcastManager().requestPermissionUpgrade(modId, getModName(), targetLevel);
+    }
+    
+    /**
+     * 请求权限升级到 SYSTEM_COMPONENT（需要用户确认）
+     * @return 错误码（0 表示成功）
+     */
+    public int requestSystemPermission() {
+        return requestPermissionUpgrade(1);
+    }
+    
+    /**
+     * 请求权限升级到 SUPER_ADMIN（需要用户确认）
+     * @return 错误码（0 表示成功）
+     */
+    public int requestAdminPermission() {
+        return requestPermissionUpgrade(0);
+    }
+    
     // ==================== 控制台输出 ====================
     
     /**
@@ -177,14 +203,6 @@ public class ModAPI {
      */
     public BroadcastManager getBroadcastManager() {
         return modLoader.getBroadcastManager();
-    }
-    
-    /**
-     * 获取命令系统
-     * @return 命令系统
-     */
-    public CommandSystem getCommandSystem() {
-        return modLoader.getCommandSystem();
     }
     
     /**

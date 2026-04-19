@@ -19,19 +19,40 @@ public abstract class BaseCommandListener implements MessageListener {
     
     @Override
     public void onMessageReceived(String domain, String message, String senderModId) {
-        // 解析 JSON 消息
-        CommandMessage commandMessage = CommandMessage.fromJson(message);
-        if (commandMessage == null) {
+        // 防御性检查：参数验证
+        if (message == null || message.trim().isEmpty()) {
             return;
         }
         
-        // 检查命令名称是否匹配
-        if (!commandName.equals(commandMessage.getCommand())) {
-            return;
+        try {
+            // 解析 JSON 消息
+            CommandMessage commandMessage = CommandMessage.fromJson(message);
+            if (commandMessage == null) {
+                String errorMsg = "Failed to parse command message: " + message;
+                modLoader.getConsole().printWarning(errorMsg);
+                modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + errorMsg, "BaseCommandListener");
+                return;
+            }
+            
+            // 检查命令名称是否匹配
+            if (!commandName.equals(commandMessage.getCommand())) {
+                return;
+            }
+            
+            // 执行命令（捕获所有异常）
+            try {
+                execute(commandMessage, senderModId);
+            } catch (Throwable e) {
+                String errorMsg = "Error executing command '" + commandName + "': " + e.getMessage();
+                modLoader.getConsole().printError(errorMsg);
+                modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, commandName);
+            }
+        } catch (Throwable e) {
+            // 最外层防御：捕获所有未处理的异常
+            String errorMsg = "Unexpected error in command listener '" + commandName + "': " + e.getMessage();
+            modLoader.getConsole().printError(errorMsg);
+            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "BaseCommandListener");
         }
-        
-        // 执行命令
-        execute(commandMessage, senderModId);
     }
     
     /**

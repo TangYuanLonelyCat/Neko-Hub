@@ -57,11 +57,11 @@ public class BootFileManager {
             java.nio.file.Path normalizedRoot = rootPath.normalize();
             
             if (!normalizedBoot.startsWith(normalizedRoot)) {
-                modLoader.getConsole().printError("Invalid boot file path: " + fileName);
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.invalid_path", fileName));
                 return null;
             }
         } catch (IOException e) {
-            modLoader.getConsole().printError("Invalid boot file path: " + fileName);
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.invalid_path", fileName));
             return null;
         }
         
@@ -113,19 +113,105 @@ public class BootFileManager {
     }
     
     /**
+     * 切换 boot 文件并立即执行
+     */
+    public void switchBootFileAndExecute(String fileName) {
+        currentBootFile = fileName;
+        executeBootFile(fileName);
+    }
+    
+    /**
+     * 在 boot 文件开头插入命令
+     */
+    public void insertCommandAtHead(String command) {
+        List<String> commands = readBootFile(currentBootFile);
+        if (commands == null) {
+            commands = new ArrayList<>();
+        }
+        
+        // 避免重复插入
+        if (!commands.contains(command)) {
+            commands.add(0, command);
+            writeBootFile(commands);
+        }
+    }
+    
+    /**
+     * 在 boot 文件开头插入命令，并移除同类型的旧命令
+     * @param command 新命令
+     * @param commandPrefix 要移除的旧命令前缀（如 "/change bootfile"）
+     */
+    public void insertCommandAtHeadWithReplace(String command, String commandPrefix) {
+        List<String> commands = readBootFile(currentBootFile);
+        if (commands == null) {
+            commands = new ArrayList<>();
+        }
+        
+        // 移除同类型的旧命令
+        commands.removeIf(cmd -> cmd.startsWith(commandPrefix));
+        
+        // 插入新命令到开头
+        commands.add(0, command);
+        writeBootFile(commands);
+    }
+    
+    /**
+     * 在 boot 文件末尾插入命令
+     */
+    public void insertCommandAtTail(String command) {
+        List<String> commands = readBootFile(currentBootFile);
+        if (commands == null) {
+            commands = new ArrayList<>();
+        }
+        
+        // 避免重复插入
+        if (!commands.contains(command)) {
+            commands.add(command);
+            writeBootFile(commands);
+        }
+    }
+    
+    /**
+     * 写入 boot 文件
+     */
+    private void writeBootFile(List<String> commands) {
+        File bootFile = new File(currentBootFile);
+        try (PrintWriter writer = new PrintWriter(
+                new OutputStreamWriter(new FileOutputStream(bootFile), StandardCharsets.UTF_8))) {
+            
+            writer.println("# Auto-generated boot file");
+            for (String command : commands) {
+                writer.println(command);
+            }
+        } catch (IOException e) {
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.generate_failed", e.getMessage()));
+        }
+    }
+    
+    /**
      * 生成 auto.boot 文件
      */
     public void generateAutoBoot() {
         File modsDir = new File("mods");
         if (!modsDir.exists() || !modsDir.isDirectory()) {
-            modLoader.getConsole().printError("mods folder not found");
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.mods_not_found"));
             return;
         }
         
         // 扫描 mods 文件夹下的所有 jar 文件
         File[] modFiles = modsDir.listFiles((dir, name) -> name.endsWith(".jar"));
         if (modFiles == null || modFiles.length == 0) {
-            modLoader.getConsole().printWarning("No mod files found in mods folder");
+            modLoader.getConsole().printWarning(modLoader.getLanguageManager().getMessage("boot.warning.no_mods"));
+            // 创建空的 auto.boot 文件
+            File bootFile = new File("auto.boot");
+            try (PrintWriter writer = new PrintWriter(
+                    new OutputStreamWriter(new FileOutputStream(bootFile), StandardCharsets.UTF_8))) {
+                writer.println("# Auto-generated boot file");
+                writer.println("# No mods found in mods folder");
+                modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("boot.success.generated_empty"));
+            } catch (IOException e) {
+                modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.generate_failed", e.getMessage()));
+            }
             return;
         }
         
@@ -142,8 +228,8 @@ public class BootFileManager {
         List<String> sortedMods;
         try {
             sortedMods = topologicalSort(modInfoMap);
-        } catch (CircularDependencyException e) {
-            modLoader.getConsole().printError("Circular dependency detected: " + e.getMessage());
+        } catch (Exception e) {
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.circular_dependency", e.getMessage()));
             return;
         }
         
@@ -159,9 +245,9 @@ public class BootFileManager {
                 }
             }
             
-            modLoader.getConsole().printSuccess("Generated auto.boot file with dependency order");
+            modLoader.getConsole().printSuccess(modLoader.getLanguageManager().getMessage("boot.success.generated"));
         } catch (IOException e) {
-            modLoader.getConsole().printError("Failed to generate auto.boot: " + e.getMessage());
+            modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("boot.error.generate_failed", e.getMessage()));
         }
     }
     
@@ -216,8 +302,8 @@ public class BootFileManager {
             }
             
             return new ModInfo(modId, fileName, dependencies);
-        } catch (IOException e) {
-            modLoader.getConsole().printWarning("Failed to read mod info from " + modFile.getName() + ": " + e.getMessage());
+        } catch (Exception e) {
+            modLoader.getConsole().printWarning(modLoader.getLanguageManager().getMessage("boot.warning.read_mod_failed", modFile.getName(), e.getMessage()));
             return null;
         }
     }
