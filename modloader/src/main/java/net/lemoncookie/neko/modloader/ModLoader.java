@@ -114,13 +114,13 @@ public class ModLoader {
             console.printError(languageManager.getMessage("modloader.error.create_command_domain", commandDomainResult));
         }
 
-        // 加载系统模组（优先加载）
+        // 加载系统模组（SystemMod，权限级别 0）
         loadSystemMod();
 
-        // 加载控制台模组（优先加载）
+        // 加载控制台模组（ConsoleMod，权限级别 0）
         loadConsoleMod();
 
-        // 注册内置命令监听器
+        // 注册内置命令监听器（SetCommand, ChangeCommand, HelpCommand 等）
         registerBuiltinCommandListeners();
 
         long startTime = System.currentTimeMillis();
@@ -149,7 +149,7 @@ public class ModLoader {
      * 加载 boot 文件
      */
     private void loadBootFile() {
-        String bootFileName = "auto.boot";
+        String bootFileName = bootFileManager.getCurrentBootFile();
         File bootFile = new File(bootFileName);
         
         // 检查是否是默认 boot 文件（auto.boot）
@@ -284,6 +284,11 @@ public class ModLoader {
         if (compatibilityLevel == 1) {
             console.printWarning(languageManager.getMessage("modloader.warning.api_version", 
                 name, mod.getApiVersion(), MIN_API_VERSION));
+        }
+
+        // 检查模组依赖
+        if (!checkDependencies(mod)) {
+            return;
         }
 
         // 注册模组，设置权限
