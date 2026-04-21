@@ -29,6 +29,8 @@ public class ModLoader {
 
     private static final String VERSION = "3.2.4";
     private static final String MIN_API_VERSION = "2.3.0";
+    
+    private static boolean cleaned = false;
 
     private final ModCore core;
     private final ModLibrary javaLibrary;
@@ -819,32 +821,40 @@ public class ModLoader {
         
         // 添加关闭钩子（处理 Ctrl+C）
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (cleaned) return;
+            cleaned = true;
+            
             System.out.println("\n[Neko-Hub] Shutdown hook triggered...");
             
-            // 静默清理
             try {
+                // 标准关闭顺序：1. 优先卸载所有模组
                 loader.unloadAll();
-            } catch (Throwable t) {
-                System.err.println("[ERROR] Shutdown cleanup failed: " + t.getMessage());
-            }
-            
-            try {
+                
+                // 2. 关闭控制台（中断阻塞线程 + 关闭流）
+                Console console = loader.getConsole();
+                console.running = false;
+                if (console.getConsoleThread() != null) {
+                    console.getConsoleThread().interrupt();
+                }
+                console.close();
+                
+                // 3. 最后关闭日志等收尾资源
                 loader.getSimpleLogger().close();
+                
+                System.out.println("[Neko-Hub] Cleanup complete.");
             } catch (Throwable t) {
-                System.err.println("[ERROR] Shutdown logger close failed: " + t.getMessage());
+                System.err.println("[ERROR] Shutdown failed: " + t.getMessage());
             }
-            
-            // JVM 关闭时关闭控制台（JVM 已在终止，不会死锁）
-            try {
-                loader.getConsole().close();
-            } catch (Throwable t) {
-                System.err.println("[ERROR] Shutdown console close failed: " + t.getMessage());
-            }
-            
-            System.out.println("[Neko-Hub] Cleanup complete.");
         }));
         
-        // 主线程直接结束
-        // 控制台线程（守护线程）继续运行
+        // 主线程保持运行，等待控制台输入
+        // 控制台线程现在是非守护线程，JVM 会等待其终止
+        // 使用无限休眠保持主线程存活
+        try {
+            Thread.sleep(Long.MAX_VALUE);
+        } catch (InterruptedException e) {
+            // 被中断，准备退出
+            Thread.currentThread().interrupt();
+        }
     }
 }

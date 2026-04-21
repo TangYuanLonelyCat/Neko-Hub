@@ -19,9 +19,7 @@ public class ExitCommand extends BaseCommandListener {
         );
         modLoader.getBroadcastManager().broadcast("Hub.Console", 
             "[SYSTEM] " + modLoader.getLanguageManager().getMessage("command.exit.info.shutting_down"), "ExitCommand");
-        modLoader.unloadAll();
-        modLoader.getSimpleLogger().close();
-        modLoader.getConsole().close();
+        // 仅触发 JVM 退出，统一由关闭钩子执行清理逻辑，避免重复执行
         System.exit(0);
     }
 }

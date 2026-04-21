@@ -18,6 +18,9 @@ public class Console {
     private final BufferedReader reader;
     private final PrintStream out;
     
+    public volatile boolean running = true;
+    private Thread consoleThread;
+    
     // 输入框可见性控制 - 使用 AtomicBoolean 保证原子操作
     private final AtomicBoolean inputEnabled = new AtomicBoolean(true);
     // 输入控制锁 - 用于 wait/notify 机制
@@ -128,26 +131,20 @@ public class Console {
     public void startInteractive() {
         Thread consoleThread = new Thread(() -> {
             try {
-                // 主循环 - 使用 while(true) 确保永不退出
-                while (true) {
+                while (running) {
                     try {
-                        // 检查输入是否启用 - 禁用时使用 wait/notify 机制高效等待
+                        if (!running) break;
+                        
                         while (!inputEnabled.get()) {
-                            // 禁用输入时，使用 wait() 高效等待，不占用 CPU
                             synchronized (inputLock) {
                                 try {
-                                    // 添加超时机制，避免永久等待（最长 1 秒）
                                     inputLock.wait(1000);
                                 } catch (InterruptedException e) {
-                                    // 被中断，恢复中断状态
                                     Thread.currentThread().interrupt();
-                                    // 中断后直接继续循环，重新检查 inputEnabled
                                 }
                             }
-                            // 超时或中断后，重新检查 inputEnabled 状态
                         }
                         
-                        // 仅在启用输入时显示提示符
                         String username = System.getProperty("user.name", "User");
                         print("[" + username + "]>");
                         
@@ -194,7 +191,7 @@ public class Console {
         });
         
         consoleThread.setName("Console-Input");
-        consoleThread.setDaemon(true);
+        consoleThread.setDaemon(false);
         consoleThread.start();
     }
     
@@ -369,6 +366,7 @@ public class Console {
      * 关闭控制台
      */
     public void close() {
+        running = false;
         try {
             reader.close();
         } catch (IOException e) {
@@ -410,5 +408,9 @@ public class Console {
      */
     public boolean isInputEnabled() {
         return inputEnabled.get();
+    }
+    
+    public Thread getConsoleThread() {
+        return consoleThread;
     }
 }
