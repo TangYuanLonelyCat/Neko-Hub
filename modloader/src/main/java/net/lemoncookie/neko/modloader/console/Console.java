@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 控制台类
@@ -16,6 +17,11 @@ public class Console {
     private final ModLoader modLoader;
     private final BufferedReader reader;
     private final PrintStream out;
+    
+    // 输入框可见性控制 - 使用 AtomicBoolean 保证原子操作
+    private final AtomicBoolean inputEnabled = new AtomicBoolean(true);
+    // 输入控制锁 - 用于 wait/notify 机制
+    private final Object inputLock = new Object();
     
     // ANSI 颜色代码
     private static final String ANSI_RESET = "\u001B[0m";
@@ -41,15 +47,6 @@ public class Console {
         } catch (Throwable e) {
             // 忽略编码设置错误
         }
-        
-        // 添加关闭钩子以确保 BufferedReader 在应用关闭时被正确关闭
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                // 忽略关闭错误
-            }
-        }));
     }
 
     /**
@@ -125,33 +122,82 @@ public class Console {
 
     /**
      * 启动交互式控制台
+     * 使用守护线程，永不退出（除非 JVM 关闭）
+     * 当输入禁用时，完全跳过输入处理，不提供任何输入机制
      */
     public void startInteractive() {
         Thread consoleThread = new Thread(() -> {
             try {
+                // 主循环 - 使用 while(true) 确保永不退出
                 while (true) {
-                    // 显示提示符
-                    String username = System.getProperty("user.name", "User");
-                    print("[" + username + "]>");
-                    
-                    // 读取用户输入
-                    String input = reader.readLine();
-                    if (input == null) {
-                        break;
+                    try {
+                        // 检查输入是否启用 - 禁用时使用 wait/notify 机制高效等待
+                        while (!inputEnabled.get()) {
+                            // 禁用输入时，使用 wait() 高效等待，不占用 CPU
+                            synchronized (inputLock) {
+                                try {
+                                    // 添加超时机制，避免永久等待（最长 1 秒）
+                                    inputLock.wait(1000);
+                                } catch (InterruptedException e) {
+                                    // 被中断，恢复中断状态
+                                    Thread.currentThread().interrupt();
+                                    // 中断后直接继续循环，重新检查 inputEnabled
+                                }
+                            }
+                            // 超时或中断后，重新检查 inputEnabled 状态
+                        }
+                        
+                        // 仅在启用输入时显示提示符
+                        String username = System.getProperty("user.name", "User");
+                        print("[" + username + "]>");
+                        
+                        // 读取用户输入（阻塞式，直到用户输入或 EOF）
+                        String input = reader.readLine();
+                        if (input == null) {
+                            // EOF reached，记录日志但不退出
+                            modLoader.getBroadcastManager().broadcast(
+                                "Hub.Log",
+                                "[WARNING] Console input stream reached EOF",
+                                "Console"
+                            );
+                            continue;
+                        }
+                        
+                        // 处理输入
+                        handleInput(input.trim());
+                        
+                    } catch (Throwable t) {
+                        // 捕获所有未处理的异常，确保控制台线程永不退出
+                        String errorMsg = "Unexpected error in console input loop: " + 
+                                         (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName());
+                        printError(errorMsg);
+                        modLoader.getBroadcastManager().broadcast(
+                            "Hub.Log",
+                            "[ERROR] " + errorMsg,
+                            "Console"
+                        );
+                        // 不退出，继续下一轮循环
                     }
-                    
-                    // 处理输入
-                    handleInput(input.trim());
                 }
-            } catch (IOException e) {
-                printLine(modLoader.getLanguageManager().getMessage("console.error.input_error", e.getMessage()));
+            } catch (Throwable t) {
+                // 最外层异常捕获（理论上不会到达这里）
+                String errorMsg = "Critical error in console thread: " + 
+                                 (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName());
+                printError(errorMsg);
+                modLoader.getBroadcastManager().broadcast(
+                    "Hub.Log",
+                    "[CRITICAL] " + errorMsg,
+                    "Console"
+                );
+                // 即使发生严重错误也不退出，继续尝试
             }
         });
         
         consoleThread.setName("Console-Input");
+        consoleThread.setDaemon(true);
         consoleThread.start();
     }
-
+    
     /**
      * 处理用户输入
      */
@@ -328,5 +374,41 @@ public class Console {
         } catch (IOException e) {
             // 忽略关闭错误
         }
+    }
+    
+    /**
+     * 设置输入框可见性
+     * @param enabled true 显示输入框，false 隐藏输入框
+     */
+    public void setInputEnabled(boolean enabled) {
+        boolean oldEnabled = inputEnabled.getAndSet(enabled);
+        
+        // 记录状态变化到日志
+        if (oldEnabled != enabled) {
+            String status = enabled ? "enabled" : "disabled";
+            String logMessage = "[INFO] Input box " + status + " by command";
+            
+            // 广播日志消息
+            modLoader.getBroadcastManager().broadcast(
+                "Hub.Log",
+                logMessage,
+                "Console"
+            );
+            
+            // 唤醒等待的线程（如果状态从禁用变为启用）
+            if (enabled) {
+                synchronized (inputLock) {
+                    inputLock.notifyAll();
+                }
+            }
+        }
+    }
+    
+    /**
+     * 获取输入框可见性状态
+     * @return true 表示输入框已启用，false 表示已禁用
+     */
+    public boolean isInputEnabled() {
+        return inputEnabled.get();
     }
 }

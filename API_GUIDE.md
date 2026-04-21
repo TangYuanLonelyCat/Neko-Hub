@@ -93,6 +93,10 @@ public class Console {
     // 交互式控制台
     public void startInteractive()
     
+    // 输入框控制（v3.2.4 新增）
+    public void setInputEnabled(boolean enabled)  // 禁用时会立即中断当前输入
+    public boolean isInputEnabled()
+    
     // 其他方法
     public void clear()
     public String readLine() throws IOException
@@ -248,6 +252,8 @@ public abstract class BaseCommandListener implements MessageListener {
 - `/say [域名] "消息内容"` - 向特定广播域发送消息
 - `/listen [域名] [start|stop]` - 监听/取消监听特定广播域
 - `/list mod [页码]` - 列出已加载的模组
+- `/change bootfile [文件名]` - 变更 boot 文件并执行
+- `/change inputboxview [true/false]` - 变更输入框可见性（v3.2.4 新增）
 
 **非命令输入：**
 - 不带 `/` 的输入会直接发送到 `Hub.Console` 广播域

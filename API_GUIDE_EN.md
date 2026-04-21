@@ -56,6 +56,8 @@ Neko-Hub is a multi-functional project that currently supports CLI mode and will
 - `/say [domain] "message"` - Send message to specific domain
 - `/listen [domain] [start|stop]` - Listen/unlisten to a domain
 - `/list mod [page]` - List loaded mods
+- `/change bootfile [filename]` - Change boot file and execute
+- `/change inputboxview [true/false]` - Change input box visibility (Added in v3.2.4)
 
 **Custom Commands for Mods:**
 
@@ -185,6 +187,10 @@ public class Console {
     
     // Interactive console
     public void startInteractive()
+    
+    // Input box control (Added in v3.2.4)
+    public void setInputEnabled(boolean enabled)  // Immediately interrupts input when disabled
+    public boolean isInputEnabled()
     
     // Other methods
     public void clear()

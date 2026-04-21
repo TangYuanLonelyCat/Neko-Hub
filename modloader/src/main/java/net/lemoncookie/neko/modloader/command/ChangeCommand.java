@@ -5,7 +5,6 @@ import net.lemoncookie.neko.modloader.ModLoader;
 /**
  * 变更命令
  * 监听 Hub.Command 广播域
- * 支持变更各种运行时配置
  */
 public class ChangeCommand extends BaseCommandListener {
     
@@ -28,20 +27,19 @@ public class ChangeCommand extends BaseCommandListener {
             case "bootfile":
                 changeBootFile(commandMessage);
                 break;
+            case "inputboxview":
+                changeInputBoxView(commandMessage);
+                break;
             default:
                 modLoader.getConsole().printError(
                     modLoader.getLanguageManager().getMessage("command.change.error.unknown_subcommand", subCommand)
                 );
                 modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.change.error.available", "bootfile")
+                    modLoader.getLanguageManager().getMessage("command.change.error.available", "bootfile, inputboxview")
                 );
         }
     }
     
-    /**
-     * 变更 boot 文件
-     * 语法：/change bootfile [文件名]
-     */
     private void changeBootFile(CommandMessage commandMessage) {
         if (commandMessage.getPartCount() < 2) {
             modLoader.getConsole().printError(
@@ -51,13 +49,11 @@ public class ChangeCommand extends BaseCommandListener {
         }
         
         String fileName = commandMessage.getPart(1);
-        // 移除可能的引号
         if ((fileName.startsWith("\"") && fileName.endsWith("\"")) || 
             (fileName.startsWith("'") && fileName.endsWith("'"))) {
             fileName = fileName.substring(1, fileName.length() - 1);
         }
         
-        // 检查文件是否存在
         java.io.File bootFile = new java.io.File(fileName);
         if (!bootFile.exists()) {
             modLoader.getConsole().printError(
@@ -66,10 +62,52 @@ public class ChangeCommand extends BaseCommandListener {
             return;
         }
         
-        // 切换 boot 文件并执行
         modLoader.getBootFileManager().switchBootFileAndExecute(fileName);
         modLoader.getConsole().printSuccess(
             modLoader.getLanguageManager().getMessage("command.change.success.bootfile", fileName)
         );
+    }
+    
+    private void changeInputBoxView(CommandMessage commandMessage) {
+        if (commandMessage.getPartCount() < 2) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.error.args", "/change inputboxview [true/false]")
+            );
+            return;
+        }
+        
+        String value = commandMessage.getPart(1);
+        String normalizedValue = value.trim().toLowerCase();
+        
+        if (!normalizedValue.equals("true") && !normalizedValue.equals("false")) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.change.error.invalid_boolean", value)
+            );
+            return;
+        }
+        
+        try {
+            boolean enabled = normalizedValue.equals("true");
+            modLoader.getConsole().setInputEnabled(enabled);
+            
+            if (enabled) {
+                modLoader.getConsole().printSuccess(
+                    modLoader.getLanguageManager().getMessage("command.change.success.inputboxview_enabled")
+                );
+            } else {
+                modLoader.getConsole().printSuccess(
+                    modLoader.getLanguageManager().getMessage("command.change.success.inputboxview_disabled")
+                );
+            }
+        } catch (Exception e) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("console.error.processing_error", e.getMessage())
+            );
+            modLoader.getBroadcastManager().broadcast(
+                "Hub.Log",
+                "[ERROR] Failed to change input box view: " + e.getMessage(),
+                "ChangeCommand"
+            );
+        }
     }
 }

@@ -27,7 +27,7 @@ import net.lemoncookie.neko.modloader.api.KModAPI;
  */
 public class ModLoader {
 
-    private static final String VERSION = "3.2.3";
+    private static final String VERSION = "3.2.4";
     private static final String MIN_API_VERSION = "2.3.0";
 
     private final ModCore core;
@@ -817,11 +817,34 @@ public class ModLoader {
         ModLoader loader = new ModLoader();
         loader.initialize();
         
-        // 保持主线程运行，等待控制台输入
-        try {
-            Thread.currentThread().join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // 添加关闭钩子（处理 Ctrl+C）
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\n[Neko-Hub] Shutdown hook triggered...");
+            
+            // 静默清理
+            try {
+                loader.unloadAll();
+            } catch (Throwable t) {
+                System.err.println("[ERROR] Shutdown cleanup failed: " + t.getMessage());
+            }
+            
+            try {
+                loader.getSimpleLogger().close();
+            } catch (Throwable t) {
+                System.err.println("[ERROR] Shutdown logger close failed: " + t.getMessage());
+            }
+            
+            // JVM 关闭时关闭控制台（JVM 已在终止，不会死锁）
+            try {
+                loader.getConsole().close();
+            } catch (Throwable t) {
+                System.err.println("[ERROR] Shutdown console close failed: " + t.getMessage());
+            }
+            
+            System.out.println("[Neko-Hub] Cleanup complete.");
+        }));
+        
+        // 主线程直接结束
+        // 控制台线程（守护线程）继续运行
     }
 }
