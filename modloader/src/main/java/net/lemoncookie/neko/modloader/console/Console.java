@@ -1,6 +1,7 @@
 package net.lemoncookie.neko.modloader.console;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -171,7 +172,7 @@ public class Console {
             }
         } catch (Exception e) {
             printError(modLoader.getLanguageManager().getMessage("console.error.processing_error", e.getMessage()));
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] Error processing input '" + input + "': " + e.getMessage(), "Console");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] Error processing input '" + input + "': " + e.getMessage(), "Console");
         }
     }
     
@@ -194,7 +195,7 @@ public class Console {
             sendCommand(commandInput);
         } catch (Throwable e) {
             printError(modLoader.getLanguageManager().getMessage("console.error.command_error", e.getMessage()));
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.command_error", e.getMessage()), "Console");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.command_error", e.getMessage()), "Console");
         }
     }
     
@@ -232,7 +233,7 @@ public class Console {
             }
         } catch (Throwable e) {
             printError(modLoader.getLanguageManager().getMessage("console.error.send_error", e.getMessage()));
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.send_error", e.getMessage()), "Console");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + modLoader.getLanguageManager().getMessage("console.error.send_error", e.getMessage()), "Console");
         }
     }
     

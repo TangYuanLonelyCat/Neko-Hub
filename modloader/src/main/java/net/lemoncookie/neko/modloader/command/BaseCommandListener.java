@@ -1,6 +1,7 @@
 package net.lemoncookie.neko.modloader.command;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 import net.lemoncookie.neko.modloader.broadcast.MessageListener;
 
 /**
@@ -30,7 +31,7 @@ public abstract class BaseCommandListener implements MessageListener {
             if (commandMessage == null) {
                 String errorMsg = "Failed to parse command message: " + message;
                 modLoader.getConsole().printWarning(errorMsg);
-                modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + errorMsg, "BaseCommandListener");
+                modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[WARNING] " + errorMsg, "BaseCommandListener");
                 return;
             }
             
@@ -45,13 +46,13 @@ public abstract class BaseCommandListener implements MessageListener {
             } catch (Throwable e) {
                 String errorMsg = "Error executing command '" + commandName + "': " + e.getMessage();
                 modLoader.getConsole().printError(errorMsg);
-                modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, commandName);
+                modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + errorMsg, commandName);
             }
         } catch (Throwable e) {
             // 最外层防御：捕获所有未处理的异常
             String errorMsg = "Unexpected error in command listener '" + commandName + "': " + e.getMessage();
             modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "BaseCommandListener");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + errorMsg, "BaseCommandListener");
         }
     }
     

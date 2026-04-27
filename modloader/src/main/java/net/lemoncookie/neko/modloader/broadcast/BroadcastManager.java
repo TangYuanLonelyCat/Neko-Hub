@@ -17,10 +17,9 @@ public class BroadcastManager {
 
     // 系统广播域
     public static final String HUB_ALL = "Hub.ALL";
-    public static final String HUB_SYSTEM = "Hub.System";
+    public static final String HUB_SYSTEM = "Hub.System";  // 日志专用域（替代原Hub.Log，公开公共域）
     public static final String HUB_CONSOLE = "Hub.Console";
     public static final String HUB_COMMAND = "Hub.Command";  // 命令域
-    public static final String HUB_LOG = "Hub.Log";  // 日志专用域（公开公共域）
 
     // 错误码
     public static final int ERROR_SUCCESS = 0;
@@ -47,7 +46,8 @@ public class BroadcastManager {
     private void initializeSystemDomains() {
         // 公开公共域
         addDomain(HUB_ALL, false, true, "system");
-        // Hub.System 不再由广播系统自动创建，由控制台模组创建（视为公开私有域）
+        // Hub.System 作为日志专用域（公开公共域）
+        addDomain(HUB_SYSTEM, false, true, "system");
     }
 
     /**
@@ -174,19 +174,13 @@ public class BroadcastManager {
         if (domain == null) {
             return ERROR_DOMAIN_NOT_FOUND;
         }
-        
-        // Hub.System 和公开私有域都需要用户确认
-        if (HUB_SYSTEM.equals(domainName) || (domain.isPrivate() && domain.isPublic())) {
+
+        // 公开私有域需要用户确认
+        if (domain.isPrivate() && domain.isPublic()) {
             try {
-                if (HUB_SYSTEM.equals(domainName)) {
-                    modLoader.getConsole().printWarning(
-                        modLoader.getLanguageManager().getMessage("broadcast.confirm.system", modName)
-                    );
-                } else {
-                    modLoader.getConsole().printWarning(
-                        modLoader.getLanguageManager().getMessage("broadcast.confirm.private", modName, domainName)
-                    );
-                }
+                modLoader.getConsole().printWarning(
+                    modLoader.getLanguageManager().getMessage("broadcast.confirm.private", modName, domainName)
+                );
                 boolean confirmed = modLoader.getConsole().readConfirmation();
                 if (!confirmed) {
                     return ERROR_PERMISSION_DENIED;
@@ -195,7 +189,7 @@ public class BroadcastManager {
                 return ERROR_PERMISSION_DENIED;
             }
         }
-        
+
         // 授予权限
         domainPermissions.computeIfAbsent(domainName, k -> new HashMap<>()).put(modId, true);
         return ERROR_SUCCESS;
@@ -293,14 +287,8 @@ public class BroadcastManager {
             return true;
         }
         
-        // 规则 2：系统级组件可访问公共域和系统域
+        // 规则 2：系统级组件可访问公共域
         if (level == 1) {
-            // 系统域需要额外检查是否已授权
-            if (HUB_SYSTEM.equals(domainName)) {
-                Map<String, Boolean> permissions = domainPermissions.get(domainName);
-                return permissions != null && permissions.getOrDefault(modId, false);
-            }
-            // 公共域（包括公开公共域和普通公共域）
             return !domain.isPrivate();
         }
         
@@ -348,14 +336,8 @@ public class BroadcastManager {
             return true;
         }
         
-        // 规则 2：系统级组件可访问公共域和系统域
+        // 规则 2：系统级组件可访问公共域
         if (level == 1) {
-            // 系统域需要额外检查是否已授权
-            if (HUB_SYSTEM.equals(domainName)) {
-                Map<String, Boolean> permissions = domainPermissions.get(domainName);
-                return permissions != null && permissions.getOrDefault(modId, false);
-            }
-            // 公共域（包括公开公共域和普通公共域）
             return !domain.isPrivate();
         }
         
@@ -387,14 +369,6 @@ public class BroadcastManager {
      */
     public boolean hasDomain(String name) {
         return domains.containsKey(name);
-    }
-
-    /**
-     * 创建系统域（由控制台模组调用）
-     */
-    public int createSystemDomain(String ownerModId) {
-        // Hub.System 作为公开私有域创建
-        return addDomain(HUB_SYSTEM, true, true, ownerModId);
     }
 
     /**

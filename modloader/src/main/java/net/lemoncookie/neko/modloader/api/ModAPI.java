@@ -54,11 +54,11 @@ public class ModAPI {
     }
     
     /**
-     * 广播消息到 Hub.Log 域（仅记录日志）
+     * 广播消息到 Hub.System 域（仅记录日志）
      * @param message 消息内容
      */
     public void broadcastLog(String message) {
-        modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_LOG, message, modId);
+        modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, message, modId);
     }
     
     /**

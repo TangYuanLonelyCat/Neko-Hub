@@ -76,14 +76,14 @@ public class SetCommand implements MessageListener {
         // 防护：禁止修改 system 模组的权限
         if ("system".equals(modName)) {
             modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.cannot_modify_system"));
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_system"), "SetCommand");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_system"), "SetCommand");
             return;
         }
         
         // 防护：禁止修改控制台模组的权限
         if ("console-mod".equals(modName)) {
             modLoader.getConsole().printError(modLoader.getLanguageManager().getMessage("command.set.error.cannot_modify_console"));
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_console"), "SetCommand");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + modLoader.getLanguageManager().getMessage("command.set.log.attempted_modify_console"), "SetCommand");
             return;
         }
 

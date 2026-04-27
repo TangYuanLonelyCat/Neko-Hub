@@ -51,11 +51,11 @@ public class ConsoleMod implements IModAPI {
         if (result == BroadcastManager.ERROR_SUCCESS) {
             String msg = modLoader.getLanguageManager().getMessage("consolemod.success.create_console_domain");
             modLoader.getConsole().printSuccess(msg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[SUCCESS] " + msg, getModId());
         } else {
             String errorMsg = modLoader.getLanguageManager().getMessage("consolemod.error.create_console_domain", result);
             modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + errorMsg, getModId());
         }
         
         modLoader.getBroadcastManager().listen(BroadcastManager.HUB_CONSOLE, new MessageListener() {

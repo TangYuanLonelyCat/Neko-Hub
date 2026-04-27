@@ -7,7 +7,7 @@ import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 /**
  * 系统模组
  * 优先加载，默认权限为 SUPER_ADMIN (level 0)
- * 负责创建 Hub.System 域
+ * Hub.System 已在 BroadcastManager 初始化时创建
  */
 public class SystemMod implements IModAPI {
     
@@ -25,7 +25,7 @@ public class SystemMod implements IModAPI {
     
     @Override
     public String getPackageName() {
-        return "net.lemoncookie.neko.modloader.systemmod";
+        return "net.lemoncookie.neko.systemmod";
     }
     
     @Override
@@ -44,17 +44,10 @@ public class SystemMod implements IModAPI {
         
         // SystemMod 的权限已在 ModLoader.registerJavaMod() 中设置为 SUPER_ADMIN
         
-        // 创建 Hub.System 域（公开私有域）
-        int result = modLoader.getBroadcastManager().createSystemDomain(getModId());
-        if (result == BroadcastManager.ERROR_SUCCESS) {
-            String msg = modLoader.getLanguageManager().getMessage("systemmod.success.create_system_domain");
-            modLoader.getConsole().printSuccess(msg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[SUCCESS] " + msg, getModId());
-        } else {
-            String errorMsg = modLoader.getLanguageManager().getMessage("systemmod.error.create_system_domain", result);
-            modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, getModId());
-        }
+        // Hub.System 已在 BroadcastManager 初始化时创建，此处仅记录日志
+        String msg = modLoader.getLanguageManager().getMessage("systemmod.info.system_ready");
+        modLoader.getConsole().printSuccess(msg);
+        modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[SUCCESS] " + msg, getModId());
     }
     
     @Override

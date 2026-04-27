@@ -9,7 +9,7 @@ public final class DomainNames {
     /** 公开公共域 - 所有模组可访问 */
     public static final String HUB_ALL = "Hub.ALL";
     
-    /** 系统域 - 系统级组件可访问 */
+    /** 系统域 - 日志专用域（公开公共域） */
     public static final String HUB_SYSTEM = "Hub.System";
     
     /** 控制台域 - 控制台消息显示 */

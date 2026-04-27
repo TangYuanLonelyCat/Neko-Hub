@@ -1,6 +1,7 @@
 package net.lemoncookie.neko.modloader.command;
 
 import net.lemoncookie.neko.modloader.ModLoader;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 
 /**
  * 卸载模组命令
@@ -42,7 +43,7 @@ public class UnloadCommand extends BaseCommandListener {
         } catch (Throwable e) {
             String errorMsg = modLoader.getLanguageManager().getMessage("command.unload.error.failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "UnloadCommand");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + errorMsg, "UnloadCommand");
         }
     }
 }

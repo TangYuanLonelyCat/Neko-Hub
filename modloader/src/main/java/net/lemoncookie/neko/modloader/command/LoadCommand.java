@@ -3,6 +3,7 @@ package net.lemoncookie.neko.modloader.command;
 import net.lemoncookie.neko.modloader.ModLoader;
 import net.lemoncookie.neko.modloader.api.IModAPI;
 import net.lemoncookie.neko.modloader.api.KModAPI;
+import net.lemoncookie.neko.modloader.broadcast.BroadcastManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,7 +82,7 @@ public class LoadCommand extends BaseCommandListener {
         } catch (Exception e) {
             String errorMsg = modLoader.getLanguageManager().getMessage("command.load.error.load_failed", e.getMessage());
             modLoader.getConsole().printError(errorMsg);
-            modLoader.getBroadcastManager().broadcast("Hub.Log", "[ERROR] " + errorMsg, "LoadCommand");
+            modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[ERROR] " + errorMsg, "LoadCommand");
         }
     }
 
@@ -92,7 +93,7 @@ public class LoadCommand extends BaseCommandListener {
     private void loadModFromJar(ModLoader modLoader, File modFile) throws Exception {
         String loadingMsg = modLoader.getLanguageManager().getMessage("command.load.info.loading", modFile.getAbsolutePath());
         modLoader.getConsole().printInfo(loadingMsg);
-        modLoader.getBroadcastManager().broadcast("Hub.Log", "[INFO] " + loadingMsg, "LoadCommand");
+        modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[INFO] " + loadingMsg, "LoadCommand");
 
         IModAPI modInstance = null;
         
@@ -145,7 +146,7 @@ public class LoadCommand extends BaseCommandListener {
                 } catch (Throwable e) {
                     String warningMsg = modLoader.getLanguageManager().getMessage("command.load.error.loading_error", e.getMessage());
                     modLoader.getConsole().printWarning(warningMsg);
-                    modLoader.getBroadcastManager().broadcast("Hub.Log", "[WARNING] " + warningMsg, "LoadCommand");
+                    modLoader.getBroadcastManager().broadcast(BroadcastManager.HUB_SYSTEM, "[WARNING] " + warningMsg, "LoadCommand");
                     throw e;
                 }
             }
