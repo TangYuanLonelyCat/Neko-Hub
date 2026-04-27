@@ -17,6 +17,7 @@ public class Console {
     private final ModLoader modLoader;
     private final BufferedReader reader;
     private final PrintStream out;
+    private boolean showInputBox = true;
     
     // ANSI 颜色代码
     private static final String ANSI_RESET = "\u001B[0m";
@@ -131,19 +132,21 @@ public class Console {
         Thread consoleThread = new Thread(() -> {
             try {
                 while (true) {
-                    // 显示提示符
+                // 显示提示符
+                if (showInputBox) {
                     String username = System.getProperty("user.name", "User");
                     print("[" + username + "]>");
-                    
-                    // 读取用户输入
-                    String input = reader.readLine();
-                    if (input == null) {
-                        break;
-                    }
-                    
-                    // 处理输入
-                    handleInput(input.trim());
                 }
+                
+                // 读取用户输入
+                String input = reader.readLine();
+                if (input == null) {
+                    break;
+                }
+                
+                // 处理输入
+                handleInput(input.trim());
+            }
             } catch (IOException e) {
                 printLine(modLoader.getLanguageManager().getMessage("console.error.input_error", e.getMessage()));
             }
@@ -329,5 +332,19 @@ public class Console {
         } catch (IOException e) {
             // 忽略关闭错误
         }
+    }
+
+    /**
+     * 设置是否显示输入框
+     */
+    public void setShowInputBox(boolean show) {
+        this.showInputBox = show;
+    }
+
+    /**
+     * 获取是否显示输入框
+     */
+    public boolean isShowInputBox() {
+        return showInputBox;
     }
 }

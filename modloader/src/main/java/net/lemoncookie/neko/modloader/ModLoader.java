@@ -27,7 +27,7 @@ import net.lemoncookie.neko.modloader.api.KModAPI;
  */
 public class ModLoader {
 
-    private static final String VERSION = "3.2.3";
+    private static final String VERSION = "3.2.4";
     private static final String MIN_API_VERSION = "2.3.0";
 
     private final ModCore core;

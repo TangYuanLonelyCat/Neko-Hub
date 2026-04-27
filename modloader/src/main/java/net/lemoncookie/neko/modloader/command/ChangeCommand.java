@@ -17,7 +17,7 @@ public class ChangeCommand extends BaseCommandListener {
     protected void execute(CommandMessage commandMessage, String senderModId) {
         if (commandMessage.getPartCount() < 1) {
             modLoader.getConsole().printError(
-                modLoader.getLanguageManager().getMessage("command.error.args", "/change [bootfile] [文件名]")
+                modLoader.getLanguageManager().getMessage("command.error.args", "/change [bootfile|inputboxview] [参数]")
             );
             return;
         }
@@ -28,12 +28,15 @@ public class ChangeCommand extends BaseCommandListener {
             case "bootfile":
                 changeBootFile(commandMessage);
                 break;
+            case "inputboxview":
+                changeInputBoxView(commandMessage);
+                break;
             default:
                 modLoader.getConsole().printError(
                     modLoader.getLanguageManager().getMessage("command.change.error.unknown_subcommand", subCommand)
                 );
                 modLoader.getConsole().printError(
-                    modLoader.getLanguageManager().getMessage("command.change.error.available", "bootfile")
+                    modLoader.getLanguageManager().getMessage("command.change.error.available", "bootfile, inputboxview")
                 );
         }
     }
@@ -70,6 +73,35 @@ public class ChangeCommand extends BaseCommandListener {
         modLoader.getBootFileManager().switchBootFileAndExecute(fileName);
         modLoader.getConsole().printSuccess(
             modLoader.getLanguageManager().getMessage("command.change.success.bootfile", fileName)
+        );
+    }
+
+    /**
+     * 变更输入框显示状态
+     * 语法：/change inputboxview [true/false]
+     */
+    private void changeInputBoxView(CommandMessage commandMessage) {
+        if (commandMessage.getPartCount() < 2) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.error.args", "/change inputboxview [true/false]")
+            );
+            return;
+        }
+
+        String value = commandMessage.getPart(1).toLowerCase();
+
+        if (!value.equals("true") && !value.equals("false")) {
+            modLoader.getConsole().printError(
+                modLoader.getLanguageManager().getMessage("command.change.error.invalid_boolean", value)
+            );
+            return;
+        }
+
+        boolean show = "true".equals(value);
+
+        modLoader.getConsole().setShowInputBox(show);
+        modLoader.getConsole().printSuccess(
+            modLoader.getLanguageManager().getMessage("command.change.success.inputboxview", String.valueOf(show))
         );
     }
 }
