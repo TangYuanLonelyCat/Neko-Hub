@@ -157,5 +157,8 @@
   "modloader.error.null_modid": "Mod ID cannot be null or empty for mod: %s",
   "modloader.error.duplicate_modid": "Mod ID already exists: %s",
   "modloader.error.iterate_mods": "Error iterating mods: %s",
+  "modloader.error.loading_mod": "Error loading mod '%s': %s",
+  "modloader.error.register_listeners": "Error registering broadcast listeners for mod '%s': %s",
+  "modloader.success.load_mod": "Mod loaded successfully: %s v%s",
   "systemmod.info.system_ready": "System Mod is ready"
 }

@@ -10,7 +10,7 @@ import java.util.List;
  * Java 版模组 API 接口
  * 用于 Java 模组开发
  */
-public interface IModAPI {
+public interface IModAPI extends BaseModAPI {
 
     /**
      * 获取模组 ID

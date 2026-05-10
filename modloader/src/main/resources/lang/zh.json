@@ -157,5 +157,8 @@
   "modloader.error.null_modid": "模组 ID 不能为空：%s",
   "modloader.error.duplicate_modid": "模组 ID 已存在：%s",
   "modloader.error.iterate_mods": "遍历模组列表时出错：%s",
+  "modloader.error.loading_mod": "加载模组失败 '%s'：%s",
+  "modloader.error.register_listeners": "注册广播监听器失败 '%s'：%s",
+  "modloader.success.load_mod": "模组加载成功：%s v%s",
   "systemmod.info.system_ready": "System Mod 已就绪"
 }

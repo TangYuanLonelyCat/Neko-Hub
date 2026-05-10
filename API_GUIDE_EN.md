@@ -517,7 +517,7 @@ public class MyJavaMod implements IModAPI {
     
     @Override
     public void registerBroadcastListeners(ModLoader modLoader, String modId) {
-        // Register custom command
+        // Implement custom command by listening to Hub.Command domain
         modLoader.getBroadcastManager().listen(
             BroadcastManager.HUB_COMMAND,
             new BaseCommandListener(modLoader, "mycommand") {

@@ -517,7 +517,7 @@ public class MyJavaMod implements IModAPI {
     
     @Override
     public void registerBroadcastListeners(ModLoader modLoader, String modId) {
-        // 注册自定义命令
+        // 通过监听 Hub.Command 域来实现自定义命令
         modLoader.getBroadcastManager().listen(
             BroadcastManager.HUB_COMMAND,
             new BaseCommandListener(modLoader, "mycommand") {

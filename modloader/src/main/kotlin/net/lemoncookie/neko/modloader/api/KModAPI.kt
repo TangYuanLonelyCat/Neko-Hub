@@ -8,7 +8,7 @@ import net.lemoncookie.neko.modloader.api.ModDependency
  * 提供更符合 Kotlin 习惯的 API 设计
  * 与 Java 版 IModAPI 功能对齐
  */
-interface KModAPI {
+interface KModAPI : BaseModAPI {
     /**
      * 模组 ID
      */
